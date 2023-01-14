@@ -32,7 +32,6 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_google_street_view: ^3.0.0
-  panorama: ^0.4.1
   google_maps_flutter: ^2.2.2
   geolocator: ^9.0.2
   geocoding: ^2.0.5

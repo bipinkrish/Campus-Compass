@@ -1,16 +1,15 @@
-// ignore_for_file: depend_on_referenced_packages
+// ignore_for_file: depend_on_referenced_packages, avoid_print
 
 import 'package:flutter/material.dart';
-import 'package:campusmap/secrets.dart'; // Stores the Google Maps API Key
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:math' show cos, sqrt, asin;
+
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_tts/flutter_tts.dart';
-import 'dart:convert';
-
-import 'dart:math' show cos, sqrt, asin;
 
 const apiKey = "AIzaSyCmyfqPois80RK7UTuXlL8s0RSGXxzA7g8";
 
@@ -298,7 +297,7 @@ class MapViewState extends State<MapView> {
   ) async {
     polylinePoints = PolylinePoints();
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-      Secrets.API_KEY, // Google Maps API Key
+      apiKey, // Google Maps API Key
       PointLatLng(startLatitude, startLongitude),
       PointLatLng(destinationLatitude, destinationLongitude),
       travelMode: TravelMode.walking,
@@ -398,6 +397,23 @@ class MapViewState extends State<MapView> {
     }
   }
 
+  Future<bool> _requestPermission() async {
+    LocationPermission permission;
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return false;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return false;
+    }
+    return true;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -466,9 +482,13 @@ class MapViewState extends State<MapView> {
                               prefixIcon: const Icon(Icons.looks_one),
                               suffixIcon: IconButton(
                                 icon: const Icon(Icons.my_location),
-                                onPressed: () {
-                                  startAddressController.text = _currentAddress;
-                                  _startAddress = _currentAddress;
+                                onPressed: () async {
+                                  bool permission = await _requestPermission();
+                                  if (permission) {
+                                    startAddressController.text =
+                                        _currentAddress;
+                                    _startAddress = _currentAddress;
+                                  }
                                 },
                               ),
                               controller: startAddressController,
@@ -565,7 +585,6 @@ class MapViewState extends State<MapView> {
                                                 );
                                               }
                                             });
-                                           
                                           }
                                         : null,
                                     child: Padding(
@@ -581,7 +600,7 @@ class MapViewState extends State<MapView> {
                                   ),
                                 ),
                               ),
-                              SizedBox(
+                              const SizedBox(
                                 width: 30,
                               ),
                               // Speak Button
@@ -635,8 +654,11 @@ class MapViewState extends State<MapView> {
                           height: 56,
                           child: Icon(Icons.my_location),
                         ),
-                        onTap: () {
-                          setNewValues();
+                        onTap: () async {
+                          bool permission = await _requestPermission();
+                          if (permission) {
+                            setNewValues();
+                          }
                         },
                       ),
                     ),
