@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:campusmap/free_view.dart';
 import 'package:campusmap/fmaps.dart';
+import 'package:campusmap/themedata.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -8,15 +9,27 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      backgroundColor: theme[0],
+      appBar: AppBar(
+        backgroundColor: theme[2],
+        elevation: 3,
+        title: Text(
+          "Campus Compass",
+          style: TextStyle(color: theme[1], fontWeight: FontWeight.bold),
+        ),
+      ),
       body: ListView(
         children: [
           ListTile(
-            leading: const Icon(
+            leading: Icon(
               Icons.map,
+              color: theme[1],
             ),
-            title: const Text(
+            title: Text(
               "Free View",
+              style: TextStyle(
+                color: theme[1],
+              ),
             ),
             trailing: IconButton(
               onPressed: () {
@@ -25,11 +38,19 @@ class HomePage extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => const FreeView()),
                 );
               },
-              icon: const Icon(Icons.join_right_sharp),
+              icon: Icon(
+                Icons.join_right_sharp,
+                color: theme[1],
+              ),
             ),
           ),
           ListTile(
-            title: const Text("Directions"),
+            title: Text(
+              "Directions",
+              style: TextStyle(
+                color: theme[1],
+              ),
+            ),
             trailing: IconButton(
               onPressed: () {
                 Navigator.push(
@@ -37,7 +58,10 @@ class HomePage extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => MapView()),
                 );
               },
-              icon: const Icon(Icons.join_right_sharp),
+              icon: Icon(
+                Icons.join_right_sharp,
+                color: theme[1],
+              ),
             ),
           ),
         ],
@@ -45,5 +69,3 @@ class HomePage extends StatelessWidget {
     );
   }
 }
-
-
