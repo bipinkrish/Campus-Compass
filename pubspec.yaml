@@ -71,6 +71,7 @@ flutter:
     - assets/cc nobg.png
     - assets/cc logo.png
     - assets/cc logo nobg.png
+    - assets/cc.gif
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

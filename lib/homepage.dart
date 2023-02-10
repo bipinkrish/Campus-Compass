@@ -3,67 +3,75 @@ import 'package:campusmap/free_view.dart';
 import 'package:campusmap/fmaps.dart';
 import 'package:campusmap/themedata.dart';
 
+List<String> names = [
+  "Street View",
+  "Directions",
+];
+
+List classes = const [
+  FreeView(),
+  MapView(),
+];
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: Drawer(
+        backgroundColor: theme[1],
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: theme[0],
+              ),
+              child: const Text(""),
+            ),
+            ListTile(
+              title: const Center(child: Text('Close')),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
       backgroundColor: theme[0],
       appBar: AppBar(
         backgroundColor: theme[2],
         elevation: 3,
         title: Text(
           "Campus Compass",
-          style: TextStyle(color: theme[1], fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: theme[1],
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: ListView(
         children: [
-          ListTile(
-            leading: Icon(
-              Icons.map,
-              color: theme[1],
-            ),
-            title: Text(
-              "Free View",
-              style: TextStyle(
-                color: theme[1],
+          for (int i = 0; i < names.length; i++)
+            ListTile(
+              title: Text(
+                names[i],
+                style: TextStyle(
+                  color: theme[1],
+                ),
               ),
-            ),
-            trailing: IconButton(
-              onPressed: () {
+              onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const FreeView()),
+                  MaterialPageRoute(builder: (context) => classes[i]),
                 );
               },
-              icon: Icon(
-                Icons.join_right_sharp,
+              trailing: Icon(
+                Icons.arrow_right_rounded,
                 color: theme[1],
               ),
             ),
-          ),
-          ListTile(
-            title: Text(
-              "Directions",
-              style: TextStyle(
-                color: theme[1],
-              ),
-            ),
-            trailing: IconButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => MapView()),
-                );
-              },
-              icon: Icon(
-                Icons.join_right_sharp,
-                color: theme[1],
-              ),
-            ),
-          ),
         ],
       ),
     );

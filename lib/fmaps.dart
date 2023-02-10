@@ -10,6 +10,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:campusmap/themedata.dart';
 
 const apiKey = "AIzaSyCmyfqPois80RK7UTuXlL8s0RSGXxzA7g8";
 
@@ -459,9 +460,9 @@ class MapViewState extends State<MapView> {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 10.0),
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white70,
-                      borderRadius: BorderRadius.all(
+                    decoration: BoxDecoration(
+                      color: theme[0],
+                      borderRadius: const BorderRadius.all(
                         Radius.circular(20.0),
                       ),
                     ),
@@ -471,9 +472,12 @@ class MapViewState extends State<MapView> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
-                          const Text(
+                          Text(
                             'Places',
-                            style: TextStyle(fontSize: 20.0),
+                            style: TextStyle(
+                              fontSize: 20.0,
+                              color: theme[1],
+                            ),
                           ),
                           const SizedBox(height: 10),
                           _textField(
@@ -591,8 +595,8 @@ class MapViewState extends State<MapView> {
                                       padding: const EdgeInsets.all(4.0),
                                       child: Text(
                                         'Show Route'.toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: theme[1],
                                           fontSize: 20.0,
                                         ),
                                       ),
@@ -619,9 +623,9 @@ class MapViewState extends State<MapView> {
                                     child: Padding(
                                       padding: const EdgeInsets.all(4.0),
                                       child: Text(
-                                        'Speak'.toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        'SPEAK',
+                                        style: TextStyle(
+                                          color: theme[1],
                                           fontSize: 20.0,
                                         ),
                                       ),

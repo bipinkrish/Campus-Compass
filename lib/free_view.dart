@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_google_street_view/flutter_google_street_view.dart';
+import 'package:campusmap/themedata.dart';
 
 // Constants
 
@@ -14,7 +15,11 @@ List<String> mapAnchors = [SIT, CSdept];
 List<String> mapNames = ["Admin Block", "CS Department"];
 List<double> mapAngles = [90, -130];
 
-TextStyle listMaps = const TextStyle(fontSize: 14, fontStyle: FontStyle.italic);
+TextStyle listMaps = TextStyle(
+  color: theme[1],
+  fontSize: 14,
+  fontStyle: FontStyle.italic,
+);
 
 // Class
 
@@ -31,7 +36,9 @@ class _FreeViewState extends State<FreeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        backgroundColor: theme[0],
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -39,15 +46,31 @@ class _FreeViewState extends State<FreeView> {
               context: context,
               builder: (BuildContext context) {
                 return SimpleDialog(
-                  title: const Text("Jump To"),
-                  children: [
-                    for (int i = 0; i < 2; i++)
-                      SimpleDialogOption(
-                        child: Text(
-                          mapNames[i],
-                          style: listMaps,
+                  backgroundColor: theme[0],
+                  title: Column(
+                    children: [
+                      Text(
+                        "Jump To",
+                        style: TextStyle(
+                          color: theme[1],
                         ),
-                        onPressed: () {
+                      ),
+                      Divider(
+                        height: 15,
+                        color: theme[1],
+                      )
+                    ],
+                  ),
+                  children: [
+                    for (int i = 0; i < mapNames.length; i++)
+                      ListTile(
+                        title: Center(
+                          child: Text(
+                            mapNames[i],
+                            style: listMaps,
+                          ),
+                        ),
+                        onTap: () {
                           Navigator.pop(context);
                           setState(() {
                             panID = i;
@@ -58,8 +81,8 @@ class _FreeViewState extends State<FreeView> {
                 );
               });
         },
-        foregroundColor: Colors.blue,
-        backgroundColor: Colors.white,
+        foregroundColor: theme[1],
+        backgroundColor: theme[2],
         child: const Icon(
           Icons.map_outlined,
         ),
