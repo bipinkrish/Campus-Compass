@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     Timer(
-      const Duration(microseconds: 2200000),
+      const Duration(microseconds: 4200000),
       () => Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -47,7 +47,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: theme[0],
-      child: Image.asset("assets/cc.gif"),
+      child: Image.asset("assets/logoanim.gif"),
     );
   }
 }
