@@ -1,9 +1,19 @@
 // ignore_for_file: unused_import
 
+import 'dart:async' show Timer;
 import 'package:flutter/material.dart';
-import 'package:campusmap/homepage.dart';
-import 'package:campusmap/themedata.dart';
-import 'dart:async';
+import 'package:campusmap/home_page.dart' show HomePage;
+
+// theme
+List<Color> theme = const [
+  Color.fromARGB(255, 52, 53, 65),
+  Color.fromARGB(255, 251, 251, 254),
+  Color.fromARGB(255, 42, 43, 52),
+  Color.fromARGB(255, 125, 126, 131),
+];
+
+// apikey
+const apiKey = "AIzaSyCmyfqPois80RK7UTuXlL8s0RSGXxzA7g8";
 
 void main() {
   runApp(const MyApp());

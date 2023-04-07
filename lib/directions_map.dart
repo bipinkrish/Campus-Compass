@@ -1,18 +1,17 @@
 // ignore_for_file: depend_on_referenced_packages, avoid_print
 
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'dart:convert' show jsonDecode;
 import 'dart:math' show cos, sqrt, asin;
 
-import 'package:flutter_tts/flutter_tts.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:campusmap/themedata.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http show get, Response;
+import 'package:flutter_tts/flutter_tts.dart' show FlutterTts;
+import 'package:flutter_polyline_points/flutter_polyline_points.dart' show PolylinePoints, PolylineResult, PointLatLng, TravelMode;
+import 'package:geocoding/geocoding.dart' show Placemark, placemarkFromCoordinates, Location, locationFromAddress;
+import 'package:geolocator/geolocator.dart' show Position, Geolocator, LocationAccuracy, LocationPermission;
+import 'package:google_maps_flutter/google_maps_flutter.dart' show CameraPosition, LatLng, GoogleMapController, Marker, PolylineId, Polyline, CameraUpdate, MarkerId, InfoWindow, BitmapDescriptor, LatLngBounds, GoogleMap, MapType;
 
-const apiKey = "AIzaSyCmyfqPois80RK7UTuXlL8s0RSGXxzA7g8";
+import 'package:campusmap/main.dart' show theme, apiKey;
 
 class MapView extends StatefulWidget {
   const MapView({super.key});

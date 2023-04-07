@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:campusmap/free_view.dart';
-import 'package:campusmap/fmaps.dart';
-import 'package:campusmap/themedata.dart';
+
+import 'package:campusmap/street_view.dart' show FreeView;
+import 'package:campusmap/directions_map.dart' show MapView;
+import 'package:campusmap/main.dart' show theme;
 
 List<String> names = [
   "Street View",

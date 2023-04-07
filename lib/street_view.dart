@@ -1,10 +1,9 @@
 // ignore_for_file: constant_identifier_names
 
 import 'package:flutter/material.dart';
-import 'package:flutter_google_street_view/flutter_google_street_view.dart';
-import 'package:campusmap/themedata.dart';
+import 'package:flutter_google_street_view/flutter_google_street_view.dart' show FlutterGoogleStreetView, StreetViewSource, StreetViewController;
 
-// Constants
+import 'package:campusmap/main.dart' show theme;
 
 const String SIT =
     "CAoSLEFGMVFpcE4tLTl2NFFuQndobjdzaXhOSFpPQlhzQkcwUUxBWF9lbVdDajdJ";
@@ -20,8 +19,6 @@ TextStyle listMaps = TextStyle(
   fontSize: 16,
   fontStyle: FontStyle.italic,
 );
-
-// Class
 
 class FreeView extends StatefulWidget {
   const FreeView({super.key});
