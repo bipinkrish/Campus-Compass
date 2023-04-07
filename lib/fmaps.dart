@@ -698,6 +698,7 @@ class MapViewState extends State<MapView> {
                 ),
               ),
             ),
+            // Show Calibration Button
             SafeArea(
               child: Align(
                 alignment: Alignment.bottomRight,
@@ -724,7 +725,20 @@ class MapViewState extends State<MapView> {
                   ),
                 ),
               ),
-            )
+            ),
+            // Show Back Button
+            Positioned(
+              bottom: 10.0,
+              left: 10.0,
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                backgroundColor: theme[0],
+                foregroundColor: theme[1],
+                child: const Icon(Icons.arrow_back),
+              ),
+            ),
           ],
         ),
       ),

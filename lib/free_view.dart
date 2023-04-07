@@ -17,7 +17,7 @@ List<double> mapAngles = [90, -130];
 
 TextStyle listMaps = TextStyle(
   color: theme[1],
-  fontSize: 14,
+  fontSize: 16,
   fontStyle: FontStyle.italic,
 );
 
@@ -36,10 +36,7 @@ class _FreeViewState extends State<FreeView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme[0],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndTop,
+      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           showDialog(
@@ -56,26 +53,29 @@ class _FreeViewState extends State<FreeView> {
                         ),
                       ),
                       Divider(
-                        height: 15,
+                        height: 10,
                         color: theme[1],
                       )
                     ],
                   ),
                   children: [
                     for (int i = 0; i < mapNames.length; i++)
-                      ListTile(
-                        title: Center(
-                          child: Text(
-                            mapNames[i],
-                            style: listMaps,
+                      SizedBox(
+                        height: 40,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            setState(() {
+                              panID = i;
+                            });
+                          },
+                          child: Center(
+                            child: Text(
+                              mapNames[i],
+                              style: listMaps,
+                            ),
                           ),
                         ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          setState(() {
-                            panID = i;
-                          });
-                        },
                       ),
                   ],
                 );
@@ -88,12 +88,28 @@ class _FreeViewState extends State<FreeView> {
         ),
       ),
       body: SafeArea(
-        child: FlutterGoogleStreetView(
-          initPanoId: mapAnchors[panID],
-          initSource: StreetViewSource.outdoor,
-          initBearing: mapAngles[panID],
-          zoomGesturesEnabled: true,
-          onStreetViewCreated: (StreetViewController controller) async {},
+        child: Stack(
+          children: [
+            FlutterGoogleStreetView(
+              initPanoId: mapAnchors[panID],
+              initSource: StreetViewSource.outdoor,
+              initBearing: mapAngles[panID],
+              zoomGesturesEnabled: true,
+              onStreetViewCreated: (StreetViewController controller) async {},
+            ),
+            Positioned(
+              top: 10.0,
+              left: 10.0,
+              child: FloatingActionButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                backgroundColor: theme[0],
+                foregroundColor: theme[1],
+                child: const Icon(Icons.arrow_back),
+              ),
+            ),
+          ],
         ),
       ),
     );
