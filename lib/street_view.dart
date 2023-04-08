@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_google_street_view/flutter_google_street_view.dart'
     show FlutterGoogleStreetView, StreetViewSource, StreetViewController;
 
-import 'package:campusmap/main.dart' show theme;
+import 'package:campusmap/main.dart' show THEME;
 
 const String SIT =
     "CAoSLEFGMVFpcE4tLTl2NFFuQndobjdzaXhOSFpPQlhzQkcwUUxBWF9lbVdDajdJ";
@@ -16,7 +16,7 @@ List<String> mapNames = ["Admin Block", "CS Department"];
 List<double> mapAngles = [90, -130];
 
 TextStyle listMaps = TextStyle(
-  color: theme[1],
+  color: THEME[1],
   fontSize: 16,
   fontStyle: FontStyle.italic,
 );
@@ -41,18 +41,18 @@ class _FreeViewState extends State<FreeView> {
               context: context,
               builder: (BuildContext context) {
                 return SimpleDialog(
-                  backgroundColor: theme[0],
+                  backgroundColor: THEME[0],
                   title: Column(
                     children: [
                       Text(
                         "Jump To",
                         style: TextStyle(
-                          color: theme[1],
+                          color: THEME[1],
                         ),
                       ),
                       Divider(
                         height: 10,
-                        color: theme[1],
+                        color: THEME[1],
                       )
                     ],
                   ),
@@ -79,8 +79,8 @@ class _FreeViewState extends State<FreeView> {
                 );
               });
         },
-        foregroundColor: theme[1],
-        backgroundColor: theme[2],
+        foregroundColor: THEME[1],
+        backgroundColor: THEME[2],
         child: const Icon(
           Icons.map_outlined,
         ),
@@ -102,8 +102,8 @@ class _FreeViewState extends State<FreeView> {
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                backgroundColor: theme[0],
-                foregroundColor: theme[1],
+                backgroundColor: THEME[0],
+                foregroundColor: THEME[1],
                 child: const Icon(Icons.arrow_back),
               ),
             ),

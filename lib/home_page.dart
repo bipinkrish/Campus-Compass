@@ -1,9 +1,12 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'package:flutter/material.dart';
 
 import 'package:campusmap/street_view.dart' show FreeView;
 import 'package:campusmap/directions_map.dart' show MapView;
-import 'package:campusmap/main.dart' show theme;
-import 'package:campusmap/language_texts.dart' show getLanguage, setLanguage, languages, languagCodes;
+import 'package:campusmap/main.dart' show THEME;
+import 'package:campusmap/language_texts.dart'
+    show getLanguage, setLanguage, LANGUAGES, LANGUAGE_CODES;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,11 +17,16 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Map<String, String>? _translations;
-  late List<String> names;
+  late List<String> LIST_NAMES;
 
-  List classes = const [
+  List CLASSES = const [
     FreeView(),
     MapView(),
+  ];
+
+  List<IconData> ICONS_LIST = const [
+    Icons.streetview_rounded,
+    Icons.directions_walk_rounded
   ];
 
   @override
@@ -41,7 +49,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    names = [
+    LIST_NAMES = [
       _translations!["street_view"] ?? "Street View",
       _translations!["directions"] ?? "Directions",
     ];
@@ -55,7 +63,7 @@ class _HomePageState extends State<HomePage> {
               children: [
                 DrawerHeader(
                   decoration: BoxDecoration(
-                    color: theme[0],
+                    color: THEME[0],
                   ),
                   child: Center(
                     child: Row(
@@ -63,7 +71,7 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         Icon(
                           Icons.settings_rounded,
-                          color: theme[3],
+                          color: THEME[3],
                         ),
                         const SizedBox(
                           width: 10,
@@ -71,7 +79,7 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           _translations!["settings"] ?? "Settings",
                           style: TextStyle(
-                              color: theme[1],
+                              color: THEME[1],
                               fontWeight: FontWeight.bold,
                               fontSize: 20),
                         ),
@@ -80,12 +88,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 DropdownButton<String>(
-                  dropdownColor: theme[0],
+                  dropdownColor: THEME[0],
                   hint: Row(
                     children: [
                       Icon(
                         Icons.language_rounded,
-                        color: theme[0],
+                        color: THEME[0],
                       ),
                       const SizedBox(
                         width: 10,
@@ -93,20 +101,20 @@ class _HomePageState extends State<HomePage> {
                       Text(
                         _translations!["languages"] ?? "Languages",
                         style: TextStyle(
-                          color: theme[0],
+                          color: THEME[0],
                         ),
                       ),
                     ],
                   ),
                   items: [
-                    for (int i = 0; i < languages.length; i++)
+                    for (int i = 0; i < LANGUAGES.length; i++)
                       DropdownMenuItem(
-                        value: languagCodes[i],
+                        value: LANGUAGE_CODES[i],
                         child: Center(
                           child: Text(
-                            languages[i],
+                            LANGUAGES[i],
                             style: TextStyle(
-                              color: theme[1],
+                              color: THEME[1],
                             ),
                           ),
                         ),
@@ -121,22 +129,22 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             ListTile(
-              tileColor: theme[0],
+              tileColor: THEME[0],
               title: Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Icon(
                       Icons.keyboard_double_arrow_left_rounded,
-                      color: theme[3],
+                      color: THEME[3],
                     ),
                     Text(
                       _translations!["close"] ?? "Close",
-                      style: TextStyle(color: theme[1]),
+                      style: TextStyle(color: THEME[1]),
                     ),
                     Icon(
                       Icons.keyboard_double_arrow_left_rounded,
-                      color: theme[3],
+                      color: THEME[3],
                     ),
                   ],
                 ),
@@ -148,37 +156,41 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      backgroundColor: theme[0],
+      backgroundColor: THEME[0],
       appBar: AppBar(
-        backgroundColor: theme[2],
+        backgroundColor: THEME[2],
         elevation: 3,
         title: Text(
           _translations!["app_title"] ?? "Campus Compass",
           style: TextStyle(
-            color: theme[1],
+            color: THEME[1],
             fontWeight: FontWeight.bold,
           ),
         ),
       ),
       body: ListView(
         children: [
-          for (int i = 0; i < names.length; i++)
+          for (int i = 0; i < LIST_NAMES.length; i++)
             ListTile(
+              leading: Icon(
+                ICONS_LIST[i],
+                color: THEME[1],
+              ),
               title: Text(
-                names[i],
+                LIST_NAMES[i],
                 style: TextStyle(
-                  color: theme[1],
+                  color: THEME[1],
                 ),
               ),
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => classes[i]),
+                  MaterialPageRoute(builder: (context) => CLASSES[i]),
                 );
               },
               trailing: Icon(
                 Icons.arrow_right_rounded,
-                color: theme[1],
+                color: THEME[1],
               ),
             ),
         ],

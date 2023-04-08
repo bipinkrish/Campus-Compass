@@ -1,11 +1,11 @@
-// ignore_for_file: unused_import
+// ignore_for_file: unused_import, constant_identifier_names, non_constant_identifier_names
 
 import 'dart:async' show Timer;
 import 'package:flutter/material.dart';
 import 'package:campusmap/home_page.dart' show HomePage;
 
-// theme
-List<Color> theme = const [
+// THEME
+List<Color> THEME = const [
   Color.fromARGB(255, 52, 53, 65),
   Color.fromARGB(255, 251, 251, 254),
   Color.fromARGB(255, 42, 43, 52),
@@ -13,7 +13,7 @@ List<Color> theme = const [
 ];
 
 // apikey
-const apiKey = "AIzaSyCmyfqPois80RK7UTuXlL8s0RSGXxzA7g8";
+const API_KEY = "AIzaSyCmyfqPois80RK7UTuXlL8s0RSGXxzA7g8";
 
 void main() {
   runApp(const MyApp());
@@ -56,7 +56,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: theme[0],
+      color: THEME[0],
       child: Image.asset("assets/logoanim.gif"),
     );
   }
