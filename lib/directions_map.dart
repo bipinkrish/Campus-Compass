@@ -58,7 +58,7 @@ class MapViewState extends State<MapView> {
   final destinationAddressController = TextEditingController();
 
   final startAddressFocusNode = FocusNode();
-  final desrinationAddressFocusNode = FocusNode();
+  final destinationAddressFocusNode = FocusNode();
 
   String _startAddress = '';
   String _destinationAddress = '';
@@ -461,6 +461,16 @@ class MapViewState extends State<MapView> {
     });
   }
 
+  bool isButtonEnabled = false;
+  String snackText = "";
+
+  void _onAddressUpdated() {
+    setState(() {
+      isButtonEnabled = startAddressController.text.isNotEmpty &&
+          destinationAddressController.text.isNotEmpty;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -470,6 +480,8 @@ class MapViewState extends State<MapView> {
     // _tts.setLanguage("en-US");
     _tts.setSpeechRate(0.4);
     _getCurrentLocation();
+    startAddressController.addListener(_onAddressUpdated);
+    destinationAddressController.addListener(_onAddressUpdated);
   }
 
   @override
@@ -497,68 +509,13 @@ class MapViewState extends State<MapView> {
             },
           ),
           // Show the place input fields & button for showing the route
-          SafeArea(
-            child: Align(
-              alignment: Alignment.bottomCenter,
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Show current location button
-                      FloatingActionButton(
-                        backgroundColor: THEME[0],
-                        foregroundColor: THEME[1],
-                        child: const SizedBox(
-                          width: 56,
-                          height: 56,
-                          child: Icon(Icons.my_location),
-                        ),
-                        onPressed: () async {
-                          bool permission = await _requestPermission();
-                          if (permission) {
-                            _setNewValues();
-                          }
-                        },
-                      ),
-                      // Show Tilt Button
-                      FloatingActionButton(
-                        backgroundColor: THEME[0],
-                        foregroundColor: THEME[1],
-                        child: const SizedBox(
-                          width: 56,
-                          height: 56,
-                          child: Icon(Icons.filter_tilt_shift),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _tilt = _tilt == 0.0 ? 90.0 : 0.0;
-                            _setNewValues();
-                          });
-                        },
-                      ),
-                      // Show Calibration Button
-                      FloatingActionButton(
-                        backgroundColor: THEME[0],
-                        foregroundColor: THEME[1],
-                        child: const SizedBox(
-                          width: 56,
-                          height: 56,
-                          child: Icon(Icons.compass_calibration_outlined),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _bearing = 0.0;
-                            _setNewValues();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
                   _textField(
                       label: _translations!["start"] ?? "Start",
                       hint: _translations!["csp"] ?? "Choose starting point",
@@ -572,8 +529,10 @@ class MapViewState extends State<MapView> {
                         onPressed: () async {
                           bool permission = await _requestPermission();
                           if (permission) {
-                            startAddressController.text = _currentAddress;
-                            _startAddress = _currentAddress;
+                            setState(() {
+                              startAddressController.text = _currentAddress;
+                              _startAddress = _currentAddress;
+                            });
                           }
                         },
                       ),
@@ -585,7 +544,9 @@ class MapViewState extends State<MapView> {
                           _startAddress = value;
                         });
                       }),
-                  const SizedBox(height: 10),
+                  const SizedBox(
+                    height: 10,
+                  ),
                   _textField(
                       label: _translations!["destination"] ?? "Destination",
                       hint: _translations!["cd"] ?? "Choose destination",
@@ -594,132 +555,161 @@ class MapViewState extends State<MapView> {
                         color: THEME[1],
                       ),
                       controller: destinationAddressController,
-                      focusNode: desrinationAddressFocusNode,
+                      focusNode: destinationAddressFocusNode,
                       width: width,
                       locationCallback: (String value) {
                         setState(() {
                           _destinationAddress = value;
                         });
                       }),
-                  const SizedBox(height: 5),
-                  Visibility(
-                    visible: _placeDistance == null ? false : true,
-                    child: Text(
-                      "${(_translations != null && _translations!["distance"] != null ? _translations!["distance"]! : "Distance")} : ${_placeDistance != null ? _placeDistance! : ""} ${(_translations != null && _translations!["km"] != null ? _translations!["km"]! : "km")}",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  Visibility(
-                    visible: _curRoute == null ? false : true,
-                    child: Text(
-                      _curRoute ?? "",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  // Show Route Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      ElevatedButton(
-                        style: ButtonStyle(
-                          backgroundColor:
-                              MaterialStateProperty.all<Color>(THEME[0]),
-                          foregroundColor:
-                              MaterialStateProperty.all<Color>(THEME[1]),
-                        ),
-                        onPressed: (_startAddress != '' &&
-                                _destinationAddress != '')
-                            ? () async {
-                                startAddressFocusNode.unfocus();
-                                desrinationAddressFocusNode.unfocus();
-                                setState(() {
-                                  if (markers.isNotEmpty) {
-                                    markers.clear();
-                                  }
-                                  if (polylines.isNotEmpty) {
-                                    polylines.clear();
-                                  }
-                                  if (polylineCoordinates.isNotEmpty) {
-                                    polylineCoordinates.clear();
-                                  }
-                                  _placeDistance = null;
-                                });
-
-                                _calculateDistance().then((isCalculated) {
-                                  if (isCalculated) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(_translations!["dcs"] ??
-                                            "Distance Calculated Sucessfully"),
-                                      ),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(_translations!["ecd"] ??
-                                            "Error Calculating Distance"),
-                                      ),
-                                    );
-                                  }
-                                });
-                              }
-                            : null,
-                        child: Center(
-                          child: Text(
-                            _translations!["show_route"] ?? "Show Route",
-                            style: TextStyle(
-                              fontSize: ((_translations!["show_route"] ??
-                                              "Show Route")
-                                          .length <
-                                      12)
-                                  ? 20
-                                  : 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Speak Button
-                      ElevatedButton(
-                        style: ButtonStyle(
-                          backgroundColor:
-                              MaterialStateProperty.all<Color>(THEME[0]),
-                          foregroundColor:
-                              MaterialStateProperty.all<Color>(THEME[1]),
-                        ),
-                        onPressed:
-                            (_startAddress != '' && _destinationAddress != '')
-                                ? () async {
-                                    await _getDirections();
-                                    await _speakDirections();
-                                  }
-                                : null,
-                        child: Center(
-                          child: Text(
-                            _translations!["speak"] ?? "Speak",
-                            style: TextStyle(
-                              fontSize:
-                                  ((_translations!["speak"] ?? "Speak").length <
-                                          12)
-                                      ? 20
-                                      : 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
+            ),
+          ),
+          // route
+          Positioned(
+            top: 50.0,
+            child: SizedBox(
+              width: width/2,
+              child: Center(
+                child: Visibility(
+                  visible: _curRoute == null ? false : true,
+                  child: Text(
+                    _curRoute ?? "",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 50.0,
+            right: 12.0,
+            child: Column(
+              children: [
+                // Show current location button
+                FloatingActionButton(
+                  backgroundColor: THEME[0],
+                  foregroundColor: THEME[1],
+                  child: const SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: Icon(Icons.my_location),
+                  ),
+                  onPressed: () async {
+                    bool permission = await _requestPermission();
+                    if (permission) {
+                      _setNewValues();
+                    }
+                  },
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                // Show Tilt Button
+                FloatingActionButton(
+                  backgroundColor: THEME[0],
+                  foregroundColor: THEME[1],
+                  child: const SizedBox(
+                    width: 56,
+                    height: 56,
+                    child: Icon(Icons.filter_tilt_shift),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _tilt = _tilt == 0.0 ? 90.0 : 0.0;
+                      _setNewValues();
+                    });
+                  },
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                // Go button
+                FloatingActionButton(
+                  onPressed: isButtonEnabled
+                      ? () async {
+                          setState(() {
+                            isButtonEnabled = false;
+                            startAddressFocusNode.unfocus();
+                            destinationAddressFocusNode.unfocus();
+                            if (markers.isNotEmpty) {
+                              markers.clear();
+                            }
+                            if (polylines.isNotEmpty) {
+                              polylines.clear();
+                            }
+                            if (polylineCoordinates.isNotEmpty) {
+                              polylineCoordinates.clear();
+                            }
+                            _placeDistance = null;
+                          });
+                          _calculateDistance().then((isCalculated) {
+                            if (isCalculated) {
+                              snackText = _translations!["dcs"] ??
+                                  "Distance Calculated Successfully";
+                              setState(() async {
+                                await _getDirections();
+                                await _speakDirections();
+                              });
+                            } else {
+                              snackText = _translations!["ecd"] ??
+                                  "Error Calculating Distance";
+                              setState(() {
+                                isButtonEnabled = true; // Enable the button
+                              });
+                            }
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                showCloseIcon: true,
+                                closeIconColor: THEME[1],
+                                backgroundColor: THEME[0],
+                                content: Center(
+                                  child: Text(
+                                    snackText,
+                                    style: TextStyle(color: THEME[1]),
+                                  ),
+                                ),
+                              ),
+                            );
+                          });
+                        }
+                      : null,
+                  backgroundColor: isButtonEnabled ? THEME[0] : THEME[3],
+                  foregroundColor: THEME[1],
+                  child: const Icon(
+                    Icons.stacked_line_chart_rounded,
+                  ),
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                // distance
+                Visibility(
+                  visible: _placeDistance == null ? false : true,
+                  child: ColoredBox(
+                    color: THEME[0],
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Text(
+                        _placeDistance != null
+                            ? "${_placeDistance!} ${_translations != null && _translations!["km"] != null ? _translations!["km"]! : "km"}"
+                            : "",
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: THEME[1]),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           // Show Back Button
@@ -732,7 +722,9 @@ class MapViewState extends State<MapView> {
               },
               backgroundColor: THEME[0],
               foregroundColor: THEME[1],
-              child: const Icon(Icons.arrow_back),
+              child: const Icon(
+                Icons.arrow_back,
+              ),
             ),
           ),
         ],
