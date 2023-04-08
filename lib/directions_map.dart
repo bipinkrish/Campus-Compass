@@ -299,6 +299,13 @@ class MapViewState extends State<MapView> {
         print('DISTANCE: $_placeDistance km');
       });
 
+      mapController.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(startLatitude, startLongitude),
+          18,
+        ),
+      );
+
       return true;
     } catch (e) {
       print(e);
@@ -523,19 +530,6 @@ class MapViewState extends State<MapView> {
                         Icons.start_rounded,
                         color: THEME[1],
                       ),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.my_location),
-                        color: THEME[1],
-                        onPressed: () async {
-                          bool permission = await _requestPermission();
-                          if (permission) {
-                            setState(() {
-                              startAddressController.text = _currentAddress;
-                              _startAddress = _currentAddress;
-                            });
-                          }
-                        },
-                      ),
                       controller: startAddressController,
                       focusNode: startAddressFocusNode,
                       width: width,
@@ -567,24 +561,53 @@ class MapViewState extends State<MapView> {
             ),
           ),
           // route
-          Positioned(
-            top: 50.0,
-            child: SizedBox(
-              width: width/2,
-              child: Center(
-                child: Visibility(
-                  visible: _curRoute == null ? false : true,
-                  child: Text(
-                    _curRoute ?? "",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
+          Container(
+            alignment: Alignment.topCenter,
+            padding: const EdgeInsets.only(top: 50.0, left: 80, right: 80),
+            child: Column(
+              children: [
+                ColoredBox(
+                  color: THEME[0],
+                  child: Visibility(
+                    visible: _curRoute == null ? false : true,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        _curRoute ?? "",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: THEME[1],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ),
-              ),
+                const SizedBox(
+                  height: 5,
+                ),
+                // distance
+                Visibility(
+                  visible: _placeDistance == null ? false : true,
+                  child: ColoredBox(
+                    color: THEME[0],
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        _placeDistance != null
+                            ? "${_placeDistance!} ${_translations != null && _translations!["km"] != null ? _translations!["km"]! : "km"}"
+                            : "",
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: THEME[1]),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Positioned(
@@ -688,26 +711,6 @@ class MapViewState extends State<MapView> {
                 ),
                 const SizedBox(
                   height: 10,
-                ),
-                // distance
-                Visibility(
-                  visible: _placeDistance == null ? false : true,
-                  child: ColoredBox(
-                    color: THEME[0],
-                    child: Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Text(
-                        _placeDistance != null
-                            ? "${_placeDistance!} ${_translations != null && _translations!["km"] != null ? _translations!["km"]! : "km"}"
-                            : "",
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: THEME[1]),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),
