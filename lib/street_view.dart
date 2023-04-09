@@ -1,25 +1,12 @@
 // ignore_for_file: constant_identifier_names
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_google_street_view/flutter_google_street_view.dart'
     show FlutterGoogleStreetView, StreetViewSource, StreetViewController;
 
 import 'package:campusmap/main.dart' show THEME;
-
-const String SIT =
-    "CAoSLEFGMVFpcE4tLTl2NFFuQndobjdzaXhOSFpPQlhzQkcwUUxBWF9lbVdDajdJ";
-const String CSdept =
-    "CAoSLEFGMVFpcE5QZG1fV1c4OUlnTmh0VEh6LXRUUjdrV3AtUWYxNUVDNEVxYUJu";
-
-List<String> mapAnchors = [SIT, CSdept];
-List<String> mapNames = ["Admin Block", "CS Department"];
-List<double> mapAngles = [90, -130];
-
-TextStyle listMaps = TextStyle(
-  color: THEME[1],
-  fontSize: 16,
-  fontStyle: FontStyle.italic,
-);
+import 'package:campusmap/values.dart' show mapAnchors, mapAngles, mapNames;
 
 class FreeView extends StatefulWidget {
   const FreeView({super.key});
@@ -29,7 +16,7 @@ class FreeView extends StatefulWidget {
 }
 
 class _FreeViewState extends State<FreeView> {
-  int panID = 0;
+  int panID = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -43,9 +30,10 @@ class _FreeViewState extends State<FreeView> {
             zoomGesturesEnabled: true,
             onStreetViewCreated: (StreetViewController controller) async {},
           ),
+          // back button
           Positioned(
-            top: 50.0,
-            left: 12.0,
+            top: 50,
+            left: 12,
             child: FloatingActionButton(
               onPressed: () {
                 Navigator.of(context).pop();
@@ -55,52 +43,77 @@ class _FreeViewState extends State<FreeView> {
               child: const Icon(Icons.arrow_back),
             ),
           ),
+          // name panel
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 55),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: ColoredBox(
+                    color: THEME[0],
+                    child: Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: Text(
+                        mapNames[panID],
+                        style: TextStyle(
+                            color: THEME[1],
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          // destination button
           Positioned(
-            top: 50.0,
-            right: 12.0,
+            top: 50,
+            right: 12,
             child: FloatingActionButton(
               onPressed: () {
-                showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return SimpleDialog(
-                        backgroundColor: THEME[0],
-                        title: Column(
-                          children: [
-                            Text(
-                              "Jump To",
+                showCupertinoModalPopup(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return CupertinoTheme(
+                      data: const CupertinoThemeData(),
+                      child: CupertinoActionSheet(
+                        actions: List<Widget>.generate(
+                          mapNames.length,
+                          (int i) => CupertinoActionSheetAction(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              setState(() {
+                                panID = i;
+                              });
+                            },
+                            child: Text(
+                              mapNames[i],
                               style: TextStyle(
+                                fontSize: 16,
+                                fontStyle: FontStyle.italic,
                                 color: THEME[1],
                               ),
                             ),
-                            Divider(
-                              height: 10,
-                              color: THEME[1],
-                            )
-                          ],
+                          ),
                         ),
-                        children: [
-                          for (int i = 0; i < mapNames.length; i++)
-                            SizedBox(
-                              height: 40,
-                              child: TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  setState(() {
-                                    panID = i;
-                                  });
-                                },
-                                child: Center(
-                                  child: Text(
-                                    mapNames[i],
-                                    style: listMaps,
-                                  ),
-                                ),
-                              ),
+                        cancelButton: CupertinoActionSheetAction(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            "Cancel",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: THEME[1],
                             ),
-                        ],
-                      );
-                    });
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
               },
               foregroundColor: THEME[1],
               backgroundColor: THEME[2],
@@ -108,7 +121,7 @@ class _FreeViewState extends State<FreeView> {
                 Icons.map_outlined,
               ),
             ),
-          )
+          ),
         ],
       ),
     );

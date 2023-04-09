@@ -605,17 +605,17 @@ class MapViewState extends State<MapView> {
           // route
           Container(
             alignment: Alignment.topCenter,
-            padding: const EdgeInsets.only(top: 50.0, left: 80, right: 80),
+            padding: const EdgeInsets.only(top: 50, left: 80, right: 80),
             child: Column(
               children: [
                 Visibility(
                   visible: _curRoute == null ? false : true,
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10.0),
+                    borderRadius: BorderRadius.circular(10),
                     child: ColoredBox(
                       color: THEME[0],
                       child: Padding(
-                        padding: const EdgeInsets.all(8.0),
+                        padding: const EdgeInsets.all(8),
                         child: Text(
                           _curRoute ?? "",
                           style: TextStyle(
@@ -659,8 +659,8 @@ class MapViewState extends State<MapView> {
             ),
           ),
           Positioned(
-            top: 50.0,
-            right: 12.0,
+            top: 50,
+            right: 12,
             child: Column(
               children: [
                 // Show current location button
