@@ -20,6 +20,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'
         Marker,
         PolylineId,
         Polyline,
+        PatternItem,
         CameraUpdate,
         MarkerId,
         InfoWindow,
@@ -71,8 +72,6 @@ class MapViewState extends State<MapView> {
   Map<PolylineId, Polyline> polylines = {};
   List<LatLng> polylineCoordinates = [];
 
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
-
   double _tilt = 0.0;
   double _bearing = 0.0;
 
@@ -87,7 +86,7 @@ class MapViewState extends State<MapView> {
     required Function(String) locationCallback,
   }) {
     return SizedBox(
-      width: width * 0.8,
+      width: width * 0.7,
       child: TextField(
         onChanged: (value) {
           locationCallback(value);
@@ -145,7 +144,7 @@ class MapViewState extends State<MapView> {
           CameraUpdate.newCameraPosition(
             CameraPosition(
               target: LatLng(position.latitude, position.longitude),
-              zoom: 18.0,
+              zoom: 20,
               tilt: _tilt,
               bearing: _bearing,
             ),
@@ -203,17 +202,6 @@ class MapViewState extends State<MapView> {
       String destinationCoordinatesString =
           '($destinationLatitude, $destinationLongitude)';
 
-      // Start Location Marker
-      Marker startMarker = Marker(
-        markerId: MarkerId(startCoordinatesString),
-        position: LatLng(startLatitude, startLongitude),
-        infoWindow: InfoWindow(
-          title: 'Start $startCoordinatesString',
-          snippet: _startAddress,
-        ),
-        icon: BitmapDescriptor.defaultMarker,
-      );
-
       // Destination Location Marker
       Marker destinationMarker = Marker(
         markerId: MarkerId(destinationCoordinatesString),
@@ -226,7 +214,6 @@ class MapViewState extends State<MapView> {
       );
 
       // Adding the markers to the list
-      markers.add(startMarker);
       markers.add(destinationMarker);
 
       print(
@@ -302,7 +289,7 @@ class MapViewState extends State<MapView> {
       mapController.animateCamera(
         CameraUpdate.newLatLngZoom(
           LatLng(startLatitude, startLongitude),
-          18,
+          20,
         ),
       );
 
@@ -333,7 +320,7 @@ class MapViewState extends State<MapView> {
   ) async {
     polylinePoints = PolylinePoints();
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-      API_KEY, // Google Maps API Key
+      API_KEY,
       PointLatLng(startLatitude, startLongitude),
       PointLatLng(destinationLatitude, destinationLongitude),
       travelMode: TravelMode.walking,
@@ -345,14 +332,28 @@ class MapViewState extends State<MapView> {
       }
     }
 
-    PolylineId id = const PolylineId('poly');
-    Polyline polyline = Polyline(
-      polylineId: id,
-      color: Colors.red,
+    PolylineId walkingRouteId = const PolylineId('walkingRoute');
+    Polyline walkingRoutePolyline = Polyline(
+      polylineId: walkingRouteId,
+      color: Colors.blue,
+      width: 10,
+      patterns: [PatternItem.dot, PatternItem.gap(30)],
       points: polylineCoordinates,
-      width: 3,
     );
-    polylines[id] = polyline;
+    polylines[walkingRouteId] = walkingRoutePolyline;
+
+    PolylineId connectingLineId = const PolylineId('connectingLine');
+    Polyline connectingPolyline = Polyline(
+      polylineId: connectingLineId,
+      color: Colors.grey,
+      width: 5,
+      patterns: [PatternItem.dot, PatternItem.gap(30)],
+      points: [
+        polylineCoordinates.last,
+        LatLng(destinationLatitude, destinationLongitude)
+      ],
+    );
+    polylines[connectingLineId] = connectingPolyline;
   }
 
   late FlutterTts _tts;
@@ -473,8 +474,7 @@ class MapViewState extends State<MapView> {
 
   void _onAddressUpdated() {
     setState(() {
-      isButtonEnabled = startAddressController.text.isNotEmpty &&
-          destinationAddressController.text.isNotEmpty;
+      isButtonEnabled = destinationAddressController.text.isNotEmpty;
     });
   }
 
@@ -487,7 +487,7 @@ class MapViewState extends State<MapView> {
     // _tts.setLanguage("en-US");
     _tts.setSpeechRate(0.4);
     _getCurrentLocation();
-    startAddressController.addListener(_onAddressUpdated);
+    // startAddressController.addListener(_onAddressUpdated);
     destinationAddressController.addListener(_onAddressUpdated);
   }
 
@@ -508,7 +508,7 @@ class MapViewState extends State<MapView> {
             mapToolbarEnabled: false,
             mapType: MapType.hybrid,
             zoomControlsEnabled: false,
-            indoorViewEnabled: false,
+            indoorViewEnabled: true,
             compassEnabled: false,
             polylines: Set<Polyline>.of(polylines.values),
             onMapCreated: (GoogleMapController controller) {
@@ -520,27 +520,10 @@ class MapViewState extends State<MapView> {
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  _textField(
-                      label: _translations!["start"] ?? "Start",
-                      hint: _translations!["csp"] ?? "Choose starting point",
-                      prefixIcon: Icon(
-                        Icons.start_rounded,
-                        color: THEME[1],
-                      ),
-                      controller: startAddressController,
-                      focusNode: startAddressFocusNode,
-                      width: width,
-                      locationCallback: (String value) {
-                        setState(() {
-                          _startAddress = value;
-                        });
-                      }),
-                  const SizedBox(
-                    height: 10,
-                  ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Destination field
                   _textField(
                       label: _translations!["destination"] ?? "Destination",
                       hint: _translations!["cd"] ?? "Choose destination",
@@ -556,6 +539,65 @@ class MapViewState extends State<MapView> {
                           _destinationAddress = value;
                         });
                       }),
+                  // Go button
+                  FloatingActionButton(
+                    onPressed: isButtonEnabled
+                        ? () async {
+                            setState(() {
+                              isButtonEnabled = false;
+                              startAddressFocusNode.unfocus();
+                              destinationAddressFocusNode.unfocus();
+                              if (markers.isNotEmpty) {
+                                markers.clear();
+                              }
+                              if (polylines.isNotEmpty) {
+                                polylines.clear();
+                              }
+                              if (polylineCoordinates.isNotEmpty) {
+                                polylineCoordinates.clear();
+                              }
+                              _placeDistance = null;
+                            });
+                            if (startAddressController.text.isEmpty) {
+                              await _getCurrentLocation();
+                            }
+                            _calculateDistance().then((isCalculated) {
+                              if (isCalculated) {
+                                snackText = _translations!["dcs"] ??
+                                    "Distance Calculated Successfully";
+                                setState(() async {
+                                  await _getDirections();
+                                  await _speakDirections();
+                                });
+                              } else {
+                                snackText = _translations!["ecd"] ??
+                                    "Error Calculating Distance";
+                                setState(() {
+                                  isButtonEnabled = true; // Enable the button
+                                });
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  showCloseIcon: true,
+                                  closeIconColor: THEME[1],
+                                  backgroundColor: THEME[0],
+                                  content: Center(
+                                    child: Text(
+                                      snackText,
+                                      style: TextStyle(color: THEME[1]),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            });
+                          }
+                        : null,
+                    backgroundColor: isButtonEnabled ? THEME[0] : THEME[3],
+                    foregroundColor: THEME[1],
+                    child: const Icon(
+                      Icons.stacked_line_chart_rounded,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -566,20 +608,23 @@ class MapViewState extends State<MapView> {
             padding: const EdgeInsets.only(top: 50.0, left: 80, right: 80),
             child: Column(
               children: [
-                ColoredBox(
-                  color: THEME[0],
-                  child: Visibility(
-                    visible: _curRoute == null ? false : true,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        _curRoute ?? "",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: THEME[1],
+                Visibility(
+                  visible: _curRoute == null ? false : true,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10.0),
+                    child: ColoredBox(
+                      color: THEME[0],
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          _curRoute ?? "",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: THEME[1],
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
                   ),
@@ -590,19 +635,22 @@ class MapViewState extends State<MapView> {
                 // distance
                 Visibility(
                   visible: _placeDistance == null ? false : true,
-                  child: ColoredBox(
-                    color: THEME[0],
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        _placeDistance != null
-                            ? "${_placeDistance!} ${_translations != null && _translations!["km"] != null ? _translations!["km"]! : "km"}"
-                            : "",
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: THEME[1]),
-                        textAlign: TextAlign.center,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10.0),
+                    child: ColoredBox(
+                      color: THEME[0],
+                      child: Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          _placeDistance != null
+                              ? "${_placeDistance!} ${_translations != null && _translations!["km"] != null ? _translations!["km"]! : "km"}"
+                              : "",
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: THEME[1]),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
                   ),
@@ -628,6 +676,7 @@ class MapViewState extends State<MapView> {
                     bool permission = await _requestPermission();
                     if (permission) {
                       _setNewValues();
+                      _getCurrentLocation();
                     }
                   },
                 ),
@@ -649,68 +698,6 @@ class MapViewState extends State<MapView> {
                       _setNewValues();
                     });
                   },
-                ),
-                const SizedBox(
-                  height: 10,
-                ),
-                // Go button
-                FloatingActionButton(
-                  onPressed: isButtonEnabled
-                      ? () async {
-                          setState(() {
-                            isButtonEnabled = false;
-                            startAddressFocusNode.unfocus();
-                            destinationAddressFocusNode.unfocus();
-                            if (markers.isNotEmpty) {
-                              markers.clear();
-                            }
-                            if (polylines.isNotEmpty) {
-                              polylines.clear();
-                            }
-                            if (polylineCoordinates.isNotEmpty) {
-                              polylineCoordinates.clear();
-                            }
-                            _placeDistance = null;
-                          });
-                          _calculateDistance().then((isCalculated) {
-                            if (isCalculated) {
-                              snackText = _translations!["dcs"] ??
-                                  "Distance Calculated Successfully";
-                              setState(() async {
-                                await _getDirections();
-                                await _speakDirections();
-                              });
-                            } else {
-                              snackText = _translations!["ecd"] ??
-                                  "Error Calculating Distance";
-                              setState(() {
-                                isButtonEnabled = true; // Enable the button
-                              });
-                            }
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                showCloseIcon: true,
-                                closeIconColor: THEME[1],
-                                backgroundColor: THEME[0],
-                                content: Center(
-                                  child: Text(
-                                    snackText,
-                                    style: TextStyle(color: THEME[1]),
-                                  ),
-                                ),
-                              ),
-                            );
-                          });
-                        }
-                      : null,
-                  backgroundColor: isButtonEnabled ? THEME[0] : THEME[3],
-                  foregroundColor: THEME[1],
-                  child: const Icon(
-                    Icons.stacked_line_chart_rounded,
-                  ),
-                ),
-                const SizedBox(
-                  height: 10,
                 ),
               ],
             ),
