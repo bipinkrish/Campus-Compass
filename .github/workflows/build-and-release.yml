@@ -20,7 +20,7 @@ jobs:
         run: flutter build apk
 
       - name: Build for iOS
-        run: flutter build ios --no-codesign --release-mode
+        run: flutter build ios --release-mode
 
       # - name: Build for Web
       #   run: flutter build web
