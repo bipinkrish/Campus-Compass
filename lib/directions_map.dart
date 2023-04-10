@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http show get, Response;
 import 'package:flutter_tts/flutter_tts.dart' show FlutterTts;
 import 'package:flutter_polyline_points/flutter_polyline_points.dart'
-    show PolylinePoints, PolylineResult, PointLatLng, TravelMode;
+    show PolylinePoints, PointLatLng;
 import 'package:geocoding/geocoding.dart'
     show Placemark, placemarkFromCoordinates, Location, locationFromAddress;
 import 'package:geolocator/geolocator.dart'
@@ -177,7 +177,7 @@ class MapViewState extends State<MapView> {
   }
 
   // Method for calculating the distance between two places
-  Future<bool> _calculateDistance() async {
+  Future<bool> _getDirections() async {
     try {
       // Retrieving placemarks from addresses
       List<Location>? startPlacemark = await locationFromAddress(_startAddress);
@@ -244,8 +244,7 @@ class MapViewState extends State<MapView> {
       double northEastLatitude = maxy;
       double northEastLongitude = maxx;
 
-      // Accommodate the two locations within the
-      // camera view of the map
+      // zoom out to show both points
       mapController.animateCamera(
         CameraUpdate.newLatLngBounds(
           LatLngBounds(
@@ -256,22 +255,28 @@ class MapViewState extends State<MapView> {
         ),
       );
 
-      // Calculating the distance between the start and the end positions
-      // with a straight path, without considering any route
-      // double distanceInMeters = await Geolocator().bearingBetween(
-      //   startCoordinates.latitude,
-      //   startCoordinates.longitude,
-      //   destinationCoordinates.latitude,
-      //   destinationCoordinates.longitude,
-      // );
+      LatLng origin = LatLng(startLatitude, startLongitude);
+      LatLng destination = LatLng(destinationLatitude, destinationLongitude);
 
-      await _createPolylines(startLatitude, startLongitude, destinationLatitude,
-          destinationLongitude);
+      String url =
+          "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=$mode&key=$API_KEY&language=$_language&units=metric";
+      http.Response response = await http.get(Uri.parse(url));
+      Map values = jsonDecode(response.body);
+      List steps = values["routes"][0]["legs"][0]["steps"];
+      _directions = steps
+          .map((step) =>
+              step["html_instructions"].replaceAll(RegExp(r"<[^>]*>"), ""))
+          .toList();
+      _destinations = steps
+          .map((step) =>
+              LatLng(step["end_location"]["lat"], step["end_location"]["lng"]))
+          .toList();
+
+      await _createPolylines(values, destinationLatitude, destinationLongitude);
 
       double totalDistance = 0.0;
 
-      // Calculating the total distance by adding the distance
-      // between small segments
+      // Calculating the total distance by adding the distance between small segments
       for (int i = 0; i < polylineCoordinates.length - 1; i++) {
         totalDistance += _coordinateDistance(
           polylineCoordinates[i].latitude,
@@ -286,6 +291,8 @@ class MapViewState extends State<MapView> {
         print('DISTANCE: $_placeDistance km');
       });
 
+      // zoom back to my location / current location
+      await Future.delayed(const Duration(seconds: 1));
       mapController.animateCamera(
         CameraUpdate.newLatLngZoom(
           LatLng(startLatitude, startLongitude),
@@ -311,25 +318,59 @@ class MapViewState extends State<MapView> {
     return 12742 * asin(sqrt(a));
   }
 
-  // Create the polylines for showing the route between two places
-  _createPolylines(
-    double startLatitude,
-    double startLongitude,
-    double destinationLatitude,
-    double destinationLongitude,
-  ) async {
-    polylinePoints = PolylinePoints();
-    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-      API_KEY,
-      PointLatLng(startLatitude, startLongitude),
-      PointLatLng(destinationLatitude, destinationLongitude),
-      travelMode: TravelMode.walking,
-    );
+  // decode lat lang from string
+  List<PointLatLng> decodePolyline(String encoded) {
+    List<PointLatLng> points = <PointLatLng>[];
+    int index = 0, lat = 0, lng = 0;
 
-    if (result.points.isNotEmpty) {
-      for (var point in result.points) {
-        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-      }
+    while (index < encoded.length) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+      lng += dlng;
+
+      points.add(PointLatLng(lat / 1E5, lng / 1E5));
+    }
+
+    return points;
+  }
+
+  // decode polies from response
+  List<PointLatLng> decodePolylineFromJson(Map<dynamic, dynamic> json) {
+    List<PointLatLng> points = [];
+
+    List<dynamic> steps = json['routes'][0]['legs'][0]['steps'];
+
+    for (int i = 0; i < steps.length; i++) {
+      String encodedPolyline = steps[i]['polyline']['points'];
+      List<PointLatLng> decodedPoints = decodePolyline(encodedPolyline);
+      points.addAll(decodedPoints);
+    }
+
+    return points;
+  }
+
+  // Create the polylines for showing the route between two places
+  _createPolylines(Map values, double destinationLatitude,
+      double destinationLongitude) async {
+    List<PointLatLng> result = decodePolylineFromJson(values);
+
+    for (var point in result) {
+      polylineCoordinates.add(LatLng(point.latitude, point.longitude));
     }
 
     PolylineId walkingRouteId = const PolylineId('walkingRoute');
@@ -376,40 +417,6 @@ class MapViewState extends State<MapView> {
     );
   }
 
-  _getDirections() async {
-    List<Location>? startPlacemark = await locationFromAddress(_startAddress);
-    List<Location>? destinationPlacemark =
-        await locationFromAddress(_destinationAddress);
-
-    double startLatitude = _startAddress == _currentAddress
-        ? _currentPosition.latitude
-        : startPlacemark[0].latitude;
-
-    double startLongitude = _startAddress == _currentAddress
-        ? _currentPosition.longitude
-        : startPlacemark[0].longitude;
-
-    double destinationLatitude = destinationPlacemark[0].latitude;
-    double destinationLongitude = destinationPlacemark[0].longitude;
-
-    LatLng origin = LatLng(startLatitude, startLongitude);
-    LatLng destination = LatLng(destinationLatitude, destinationLongitude);
-
-    String url =
-        "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&key=$API_KEY&language=$_language";
-    http.Response response = await http.get(Uri.parse(url));
-    Map values = jsonDecode(response.body);
-    List steps = values["routes"][0]["legs"][0]["steps"];
-    _directions = steps
-        .map((step) =>
-            step["html_instructions"].replaceAll(RegExp(r"<[^>]*>"), ""))
-        .toList();
-    _destinations = steps
-        .map((step) =>
-            LatLng(step["end_location"]["lat"], step["end_location"]["lng"]))
-        .toList();
-  }
-
   _speakDirections() async {
     for (int i = 0; i < _directions.length; i++) {
       String direction = _directions[i];
@@ -419,7 +426,6 @@ class MapViewState extends State<MapView> {
         print(_curRoute);
       });
 
-      // Wait for the person to reach the destination before speaking the next direction
       LatLng destination = _destinations[i];
       while (true) {
         await Future.delayed(const Duration(seconds: 1));
@@ -452,6 +458,7 @@ class MapViewState extends State<MapView> {
   }
 
   late String _language;
+  String mode = 'walking';
 
   void _loadLangs() async {
     String? lang = await getLanguageCode();
@@ -561,12 +568,11 @@ class MapViewState extends State<MapView> {
                             if (startAddressController.text.isEmpty) {
                               await _getCurrentLocation();
                             }
-                            _calculateDistance().then((isCalculated) {
+                            _getDirections().then((isCalculated) {
                               if (isCalculated) {
                                 snackText = _translations!["dcs"] ??
                                     "Distance Calculated Successfully";
                                 setState(() async {
-                                  await _getDirections();
                                   await _speakDirections();
                                 });
                               } else {
