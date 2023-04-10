@@ -20,7 +20,7 @@ jobs:
         run: flutter build apk
 
       - name: Build for iOS
-        run: flutter build ios --release
+        run: flutter build ios
 
       # - name: Build for Web
       #   run: flutter build web
