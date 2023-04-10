@@ -1,4 +1,4 @@
-// ignore_for_file: depend_on_referenced_packages, avoid_print
+// ignore_for_file: depend_on_referenced_packages, avoid_print, use_build_context_synchronously
 
 import 'dart:convert' show jsonDecode;
 import 'dart:math' show cos, sqrt, asin;
@@ -53,6 +53,7 @@ class MapViewState extends State<MapView> {
 
   late GoogleMapController mapController;
   late Position _currentPosition;
+  // late double _startLat, _startLng, _destLat, _desLng;
   String _currentAddress = '';
 
   final startAddressController = TextEditingController();
@@ -64,16 +65,20 @@ class MapViewState extends State<MapView> {
   String _startAddress = '';
   String _destinationAddress = '';
   String? _placeDistance;
+  String? _nxtDistance;
+  String? _nxtDuration;
+  String? _placeDuration;
   String? _curRoute;
+  String? _curManeuver;
 
   Set<Marker> markers = {};
 
   late PolylinePoints polylinePoints;
-  Map<PolylineId, Polyline> polylines = {};
+  Set<Polyline> _polylines = <Polyline>{};
   List<LatLng> polylineCoordinates = [];
 
   double _tilt = 0.0;
-  double _bearing = 0.0;
+  final double _bearing = 0.0;
 
   Widget _textField({
     required TextEditingController controller,
@@ -134,12 +139,11 @@ class MapViewState extends State<MapView> {
   }
 
   // Method for retrieving the current location
-  _getCurrentLocation() async {
+  Future<void> _getCurrentLocation() async {
     await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
         .then((Position position) async {
       setState(() {
         _currentPosition = position;
-        print('CURRENT POS: $_currentPosition');
         mapController.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
@@ -158,7 +162,7 @@ class MapViewState extends State<MapView> {
   }
 
   // Method for retrieving the address
-  _getAddress() async {
+  Future<void> _getAddress() async {
     try {
       List<Placemark> p = await placemarkFromCoordinates(
           _currentPosition.latitude, _currentPosition.longitude);
@@ -198,7 +202,7 @@ class MapViewState extends State<MapView> {
       double destinationLatitude = destinationPlacemark[0].latitude;
       double destinationLongitude = destinationPlacemark[0].longitude;
 
-      String startCoordinatesString = '($startLatitude, $startLongitude)';
+      // String startCoordinatesString = '($startLatitude, $startLongitude)';
       String destinationCoordinatesString =
           '($destinationLatitude, $destinationLongitude)';
 
@@ -216,33 +220,28 @@ class MapViewState extends State<MapView> {
       // Adding the markers to the list
       markers.add(destinationMarker);
 
-      print(
-        'START COORDINATES: ($startLatitude, $startLongitude)',
-      );
-      print(
-        'DESTINATION COORDINATES: ($destinationLatitude, $destinationLongitude)',
-      );
+      // _startLat = startLatitude;
+      // _startLng = startLongitude;
+      // _destLat = destinationLatitude;
+      // _desLng = destinationLongitude;
 
-      // Calculating to check that the position relative
-      // to the frame, and pan & zoom the camera accordingly.
-      double miny = (startLatitude <= destinationLatitude)
-          ? startLatitude
-          : destinationLatitude;
-      double minx = (startLongitude <= destinationLongitude)
-          ? startLongitude
-          : destinationLongitude;
-      double maxy = (startLatitude <= destinationLatitude)
-          ? destinationLatitude
-          : startLatitude;
-      double maxx = (startLongitude <= destinationLongitude)
-          ? destinationLongitude
-          : startLongitude;
+      // getting accurate route
+      LatLng origin = LatLng(startLatitude, startLongitude);
+      LatLng destination = LatLng(destinationLatitude, destinationLongitude);
+      String url =
+          "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=$mode&key=$API_KEY&language=$_language&units=metric";
+      http.Response response = await http.get(Uri.parse(url));
+      Map values = jsonDecode(response.body);
 
-      double southWestLatitude = miny;
-      double southWestLongitude = minx;
+      double southWestLatitude =
+          values["routes"][0]["bounds"]["southwest"]["lat"];
+      double southWestLongitude =
+          values["routes"][0]["bounds"]["southwest"]["lng"];
 
-      double northEastLatitude = maxy;
-      double northEastLongitude = maxx;
+      double northEastLatitude =
+          values["routes"][0]["bounds"]["northeast"]["lat"];
+      double northEastLongitude =
+          values["routes"][0]["bounds"]["northeast"]["lng"];
 
       // zoom out to show both points
       mapController.animateCamera(
@@ -255,13 +254,10 @@ class MapViewState extends State<MapView> {
         ),
       );
 
-      LatLng origin = LatLng(startLatitude, startLongitude);
-      LatLng destination = LatLng(destinationLatitude, destinationLongitude);
+      await _createPolylines(values, startLatitude, startLongitude,
+          destinationLatitude, destinationLongitude);
 
-      String url =
-          "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=$mode&key=$API_KEY&language=$_language&units=metric";
-      http.Response response = await http.get(Uri.parse(url));
-      Map values = jsonDecode(response.body);
+      // setting up directions
       List steps = values["routes"][0]["legs"][0]["steps"];
       _directions = steps
           .map((step) =>
@@ -271,25 +267,16 @@ class MapViewState extends State<MapView> {
           .map((step) =>
               LatLng(step["end_location"]["lat"], step["end_location"]["lng"]))
           .toList();
+      _maneuvers = steps.map((step) => step["maneuver"] ?? "straight").toList();
+      _stepdistances = steps
+          .map((step) => (step["distance"]["value"] / 1000).toStringAsFixed(2))
+          .toList();
+      _stepdurations =
+          steps.map((step) => (step["duration"]["value"]).toString()).toList();
 
-      await _createPolylines(values, destinationLatitude, destinationLongitude);
-
-      double totalDistance = 0.0;
-
-      // Calculating the total distance by adding the distance between small segments
-      for (int i = 0; i < polylineCoordinates.length - 1; i++) {
-        totalDistance += _coordinateDistance(
-          polylineCoordinates[i].latitude,
-          polylineCoordinates[i].longitude,
-          polylineCoordinates[i + 1].latitude,
-          polylineCoordinates[i + 1].longitude,
-        );
-      }
-
-      setState(() {
-        _placeDistance = totalDistance.toStringAsFixed(2);
-        print('DISTANCE: $_placeDistance km');
-      });
+      double totalDistance =
+          values["routes"][0]["legs"][0]["distance"]["value"] / 1000;
+      int totalDuration = values["routes"][0]["legs"][0]["duration"]["value"];
 
       // zoom back to my location / current location
       await Future.delayed(const Duration(seconds: 1));
@@ -300,22 +287,17 @@ class MapViewState extends State<MapView> {
         ),
       );
 
+      setState(() {
+        _lastPosition = _currentPosition;
+        _placeDistance = totalDistance.toStringAsFixed(2);
+        _placeDuration = totalDuration.toString();
+      });
+
       return true;
     } catch (e) {
       print(e);
     }
     return false;
-  }
-
-  // Formula for calculating distance between two coordinates
-  // https://stackoverflow.com/a/54138876/11910277
-  double _coordinateDistance(lat1, lon1, lat2, lon2) {
-    var p = 0.017453292519943295;
-    var c = cos;
-    var a = 0.5 -
-        c((lat2 - lat1) * p) / 2 +
-        c(lat1 * p) * c(lat2 * p) * (1 - c((lon2 - lon1) * p)) / 2;
-    return 12742 * asin(sqrt(a));
   }
 
   // decode lat lang from string
@@ -365,13 +347,44 @@ class MapViewState extends State<MapView> {
   }
 
   // Create the polylines for showing the route between two places
-  _createPolylines(Map values, double destinationLatitude,
+  Future<void> _createPolylines(
+      Map values,
+      double startLatitude,
+      double startLongitude,
+      double destinationLatitude,
       double destinationLongitude) async {
     List<PointLatLng> result = decodePolylineFromJson(values);
 
-    for (var point in result) {
-      polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-    }
+    List<LatLng> polylineCoordinates = result.map((point) {
+      return LatLng(point.latitude, point.longitude);
+    }).toList();
+
+    PolylineId startingConnectingLineId =
+        const PolylineId('startingConnectingLine');
+    Polyline startingConnectingPolyline = Polyline(
+      polylineId: startingConnectingLineId,
+      color: Colors.grey,
+      width: 5,
+      patterns: [PatternItem.dot, PatternItem.gap(30)],
+      points: [
+        polylineCoordinates.first,
+        LatLng(startLatitude, startLongitude),
+      ],
+    );
+
+    _polylines.add(startingConnectingPolyline);
+    PolylineId connectingLineId = const PolylineId('connectingLine');
+    Polyline connectingPolyline = Polyline(
+      polylineId: connectingLineId,
+      color: Colors.grey,
+      width: 5,
+      patterns: [PatternItem.dot, PatternItem.gap(30)],
+      points: [
+        polylineCoordinates.last,
+        LatLng(destinationLatitude, destinationLongitude),
+      ],
+    );
+    _polylines.add(connectingPolyline);
 
     PolylineId walkingRouteId = const PolylineId('walkingRoute');
     Polyline walkingRoutePolyline = Polyline(
@@ -381,27 +394,19 @@ class MapViewState extends State<MapView> {
       patterns: [PatternItem.dot, PatternItem.gap(30)],
       points: polylineCoordinates,
     );
-    polylines[walkingRouteId] = walkingRoutePolyline;
+    _polylines.add(walkingRoutePolyline);
 
-    PolylineId connectingLineId = const PolylineId('connectingLine');
-    Polyline connectingPolyline = Polyline(
-      polylineId: connectingLineId,
-      color: Colors.grey,
-      width: 5,
-      patterns: [PatternItem.dot, PatternItem.gap(30)],
-      points: [
-        polylineCoordinates.last,
-        LatLng(destinationLatitude, destinationLongitude)
-      ],
-    );
-    polylines[connectingLineId] = connectingPolyline;
+    setState(() {});
   }
 
   late FlutterTts _tts;
   List<dynamic> _directions = [];
   List<dynamic> _destinations = [];
+  List<dynamic> _maneuvers = [];
+  List<dynamic> _stepdurations = [];
+  List<dynamic> _stepdistances = [];
 
-  _setNewValues() async {
+  Future<void> _setNewValues() async {
     mapController.animateCamera(
       CameraUpdate.newCameraPosition(
         CameraPosition(
@@ -417,23 +422,70 @@ class MapViewState extends State<MapView> {
     );
   }
 
-  _speakDirections() async {
+  Future<void> _updatePolylines() async {
+    // Calculate the distance between the current position and the last position of the user
+    double distance = Geolocator.distanceBetween(
+        _lastPosition.latitude,
+        _lastPosition.longitude,
+        _currentPosition.latitude,
+        _currentPosition.longitude);
+
+    // Remove the oldest point(s) from the list if the distance is greater than a certain threshold value and update
+    if (distance > updateDist) {
+      int index = 0;
+      while (index < polylineCoordinates.length - 1 &&
+          Geolocator.distanceBetween(
+                  polylineCoordinates[index].latitude,
+                  polylineCoordinates[index].longitude,
+                  _currentPosition.latitude,
+                  _currentPosition.longitude) >
+              updateDist) {
+        polylineCoordinates.removeAt(0);
+        index++;
+      }
+      _polylines.removeWhere(
+          (polyline) => polyline.polylineId.value == 'walkingRoute');
+      PolylineId walkingRouteId = const PolylineId('walkingRoute');
+      Polyline walkingRoutePolyline = Polyline(
+        polylineId: walkingRouteId,
+        color: Colors.blue,
+        width: 10,
+        patterns: [PatternItem.dot, PatternItem.gap(30)],
+        points: polylineCoordinates,
+      );
+      _polylines.add(walkingRoutePolyline);
+    }
+
+    setState(() {
+      _lastPosition = _currentPosition;
+    });
+  }
+
+  Future<void> _speakDirections() async {
     for (int i = 0; i < _directions.length; i++) {
       String direction = _directions[i];
       await _tts.speak(direction);
       setState(() {
+        _curManeuver = _maneuvers[i];
         _curRoute = direction;
-        print(_curRoute);
+        _nxtDistance = _stepdistances[i];
+        _nxtDuration = _stepdurations[i];
       });
 
       LatLng destination = _destinations[i];
       while (true) {
         await Future.delayed(const Duration(seconds: 1));
-        Position currentLocation = await Geolocator.getCurrentPosition(
+        _currentPosition = await Geolocator.getCurrentPosition(
             desiredAccuracy: LocationAccuracy.high);
 
-        if (currentLocation.latitude == destination.latitude &&
-            currentLocation.longitude == destination.longitude) {
+        _updatePolylines();
+
+        if (Geolocator.distanceBetween(
+                _currentPosition.latitude,
+                _currentPosition.longitude,
+                destination.latitude,
+                destination.longitude) <
+            updateDist) {
           break;
         }
       }
@@ -468,6 +520,8 @@ class MapViewState extends State<MapView> {
   }
 
   Map<String, String>? _translations;
+  late Position _lastPosition;
+  double updateDist = 10.0;
 
   void _loadTranslations() async {
     Map<String, String>? translations = await getLanguage();
@@ -480,9 +534,11 @@ class MapViewState extends State<MapView> {
   String snackText = "";
 
   void _onAddressUpdated() {
-    setState(() {
-      isButtonEnabled = destinationAddressController.text.isNotEmpty;
-    });
+    if (destinationAddressController.text.isNotEmpty != isButtonEnabled) {
+      setState(() {
+        isButtonEnabled = !isButtonEnabled;
+      });
+    }
   }
 
   @override
@@ -517,13 +573,67 @@ class MapViewState extends State<MapView> {
             zoomControlsEnabled: false,
             indoorViewEnabled: true,
             compassEnabled: false,
-            polylines: Set<Polyline>.of(polylines.values),
+            polylines: _polylines,
             onMapCreated: (GoogleMapController controller) {
               mapController = controller;
             },
           ),
-          // Show the place input fields & button for showing the route
+          // totals
           Align(
+            alignment: const Alignment(0, 0.8),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // total duration
+                  Visibility(
+                    visible: _placeDuration == null ? false : true,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10.0),
+                      child: ColoredBox(
+                        color: THEME[0],
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            _placeDuration != null
+                                ? "${_placeDuration!} ${_translations != null && _translations!["sec"] != null ? _translations!["sec"]! : "sec"}"
+                                : "",
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: THEME[1]),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // total distance
+                  Visibility(
+                    visible: _placeDistance == null ? false : true,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10.0),
+                      child: ColoredBox(
+                        color: THEME[0],
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            _placeDistance != null
+                                ? "${_placeDistance!} ${_translations != null && _translations!["km"] != null ? _translations!["km"]! : "km"}"
+                                : "",
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: THEME[1]),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ]),
+          ),
+          // Show the place input fields & go button
+          Container(
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -557,22 +667,28 @@ class MapViewState extends State<MapView> {
                               if (markers.isNotEmpty) {
                                 markers.clear();
                               }
-                              if (polylines.isNotEmpty) {
-                                polylines.clear();
+                              if (_polylines.isNotEmpty) {
+                                _polylines.clear();
                               }
                               if (polylineCoordinates.isNotEmpty) {
                                 polylineCoordinates.clear();
                               }
+                              _curRoute = null;
+                              _curManeuver = null;
+                              _nxtDistance = null;
+                              _nxtDuration = null;
                               _placeDistance = null;
+                              _placeDuration = null;
                             });
                             if (startAddressController.text.isEmpty) {
                               await _getCurrentLocation();
                             }
-                            _getDirections().then((isCalculated) {
-                              if (isCalculated) {
+                            _getDirections().then((isDone) {
+                              if (isDone) {
                                 snackText = _translations!["dcs"] ??
                                     "Distance Calculated Successfully";
                                 setState(() async {
+                                  await _tts.stop();
                                   await _speakDirections();
                                 });
                               } else {
@@ -638,28 +754,79 @@ class MapViewState extends State<MapView> {
                 const SizedBox(
                   height: 5,
                 ),
-                // distance
-                Visibility(
-                  visible: _placeDistance == null ? false : true,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10.0),
-                    child: ColoredBox(
-                      color: THEME[0],
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          _placeDistance != null
-                              ? "${_placeDistance!} ${_translations != null && _translations!["km"] != null ? _translations!["km"]! : "km"}"
-                              : "",
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: THEME[1]),
-                          textAlign: TextAlign.center,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // maneuver
+                    Visibility(
+                      visible: _curManeuver == null ? false : true,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: ColoredBox(
+                          color: THEME[0],
+                          child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: _curManeuver == null
+                                  ? Icon(Icons.straight_rounded,
+                                      color: THEME[1])
+                                  : _curManeuver == "straight"
+                                      ? Icon(Icons.straight_rounded,
+                                          color: THEME[1])
+                                      : _curManeuver!.contains("left")
+                                          ? Icon(Icons.turn_left_rounded,
+                                              color: THEME[1])
+                                          : Icon(Icons.turn_right_rounded,
+                                              color: THEME[1])),
                         ),
                       ),
                     ),
-                  ),
+                    // next duration
+                    Visibility(
+                      visible: _nxtDuration == null ? false : true,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10.0),
+                        child: ColoredBox(
+                          color: THEME[0],
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              _nxtDuration != null
+                                  ? "${_nxtDuration!} ${_translations != null && _translations!["sec"] != null ? _translations!["sec"]! : "sec"}"
+                                  : "",
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: THEME[1]),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    // next distance
+                    Visibility(
+                      visible: _nxtDistance == null ? false : true,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10.0),
+                        child: ColoredBox(
+                          color: THEME[0],
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Text(
+                              _nxtDistance != null
+                                  ? "${_nxtDistance!} ${_translations != null && _translations!["km"] != null ? _translations!["km"]! : "km"}"
+                                  : "",
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: THEME[1]),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -713,7 +880,8 @@ class MapViewState extends State<MapView> {
             top: 50.0,
             left: 12.0,
             child: FloatingActionButton(
-              onPressed: () {
+              onPressed: () async {
+                await _tts.stop();
                 Navigator.of(context).pop();
               },
               backgroundColor: THEME[0],
