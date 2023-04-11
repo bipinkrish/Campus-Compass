@@ -1,7 +1,6 @@
 // ignore_for_file: depend_on_referenced_packages, avoid_print, use_build_context_synchronously
 
 import 'dart:convert' show jsonDecode;
-import 'dart:math' show cos, sqrt, asin;
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http show get, Response;
@@ -32,6 +31,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'
 import 'package:campusmap/main.dart' show THEME, API_KEY;
 import 'package:campusmap/language_texts.dart'
     show getLanguageCode, getLanguage;
+import 'package:campusmap/map_styles.dart' show MapStyle;
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -73,11 +73,30 @@ class MapViewState extends State<MapView> {
 
   Set<Marker> markers = {};
 
+  List<MapType> mapTypes = [MapType.normal, MapType.hybrid, MapType.terrain];
+  List<IconData> mapTypeIcons = [
+    Icons.width_normal_rounded,
+    Icons.satellite_alt_rounded,
+    Icons.terrain_rounded
+  ];
+  int _choseMapType = 0;
+
+  List<String> mapStyles = [
+    MapStyle.standard,
+    MapStyle.silver,
+    MapStyle.retro,
+    MapStyle.dark,
+    MapStyle.night,
+    MapStyle.aubergine
+  ];
+  List<IconData> mapStyleIcons = [];
+  int _choseMapStyle = 3;
+
   late PolylinePoints polylinePoints;
   Set<Polyline> _polylines = <Polyline>{};
   List<LatLng> polylineCoordinates = [];
 
-  double _tilt = 0.0;
+  final double _tilt = 0.0;
   final double _bearing = 0.0;
 
   Widget _textField({
@@ -113,7 +132,7 @@ class MapViewState extends State<MapView> {
           fillColor: THEME[0],
           enabledBorder: OutlineInputBorder(
             borderRadius: const BorderRadius.all(
-              Radius.circular(10.0),
+              Radius.circular(10),
             ),
             borderSide: BorderSide(
               color: THEME[0],
@@ -122,7 +141,7 @@ class MapViewState extends State<MapView> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: const BorderRadius.all(
-              Radius.circular(10.0),
+              Radius.circular(10),
             ),
             borderSide: BorderSide(
               color: THEME[1],
@@ -135,6 +154,45 @@ class MapViewState extends State<MapView> {
         ),
         cursorColor: THEME[3],
       ),
+    );
+  }
+
+  Widget _buildMapStyleButton(String label, int index) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        FloatingActionButton(
+          backgroundColor: THEME[0],
+          onPressed: () {
+            if (_choseMapStyle != index) {
+              Navigator.pop(context);
+              setState(() {
+                _choseMapStyle = index;
+                mapController.setMapStyle(mapStyles[_choseMapStyle]);
+              });
+            }
+          },
+          shape: _choseMapStyle == index
+              ? RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(width: 2, color: THEME[3]),
+                )
+              : null,
+          child: Icon(
+            Icons.line_style_rounded,
+            color: THEME[1],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: THEME[1],
+            fontWeight:
+                _choseMapStyle == index ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
     );
   }
 
@@ -453,12 +511,11 @@ class MapViewState extends State<MapView> {
         patterns: [PatternItem.dot, PatternItem.gap(30)],
         points: polylineCoordinates,
       );
-      _polylines.add(walkingRoutePolyline);
+      setState(() {
+        _polylines.add(walkingRoutePolyline);
+        _lastPosition = _currentPosition;
+      });
     }
-
-    setState(() {
-      _lastPosition = _currentPosition;
-    });
   }
 
   Future<void> _speakDirections() async {
@@ -521,7 +578,7 @@ class MapViewState extends State<MapView> {
 
   Map<String, String>? _translations;
   late Position _lastPosition;
-  double updateDist = 10.0;
+  double updateDist = 5;
 
   void _loadTranslations() async {
     Map<String, String>? translations = await getLanguage();
@@ -569,13 +626,14 @@ class MapViewState extends State<MapView> {
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             mapToolbarEnabled: false,
-            mapType: MapType.hybrid,
+            mapType: mapTypes[_choseMapType],
             zoomControlsEnabled: false,
             indoorViewEnabled: true,
             compassEnabled: false,
             polylines: _polylines,
             onMapCreated: (GoogleMapController controller) {
               mapController = controller;
+              mapController.setMapStyle(mapStyles[_choseMapStyle]);
             },
           ),
           // totals
@@ -730,6 +788,7 @@ class MapViewState extends State<MapView> {
             padding: const EdgeInsets.only(top: 50, left: 80, right: 80),
             child: Column(
               children: [
+                // cur route
                 Visibility(
                   visible: _curRoute == null ? false : true,
                   child: ClipRRect(
@@ -856,22 +915,133 @@ class MapViewState extends State<MapView> {
                 const SizedBox(
                   height: 10,
                 ),
-                // Show Tilt Button
+                // Show map type Button
                 FloatingActionButton(
                   backgroundColor: THEME[0],
                   foregroundColor: THEME[1],
                   child: const SizedBox(
                     width: 56,
                     height: 56,
-                    child: Icon(Icons.filter_tilt_shift),
+                    child: Icon(Icons.camera_rounded),
                   ),
                   onPressed: () {
-                    setState(() {
-                      _tilt = _tilt == 0.0 ? 90.0 : 0.0;
-                      _setNewValues();
-                    });
+                    showModalBottomSheet<void>(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return Container(
+                          color: THEME[2],
+                          height: 120,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: <Widget>[
+                              for (var entry in [
+                                "Normal",
+                                "Satellite",
+                                "Terrain"
+                              ].asMap().entries)
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: <Widget>[
+                                    FloatingActionButton(
+                                      backgroundColor: THEME[0],
+                                      onPressed: () {
+                                        if (_choseMapType != entry.key) {
+                                          Navigator.pop(context);
+                                          setState(() {
+                                            _choseMapType = entry.key;
+                                          });
+                                        }
+                                      },
+                                      shape: _choseMapType == entry.key
+                                          ? RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              side: BorderSide(
+                                                  width: 2, color: THEME[3]),
+                                            )
+                                          : null,
+                                      child: Icon(
+                                        mapTypeIcons[entry.key],
+                                        color: THEME[1],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      entry.value,
+                                      style: TextStyle(
+                                        color: THEME[1],
+                                        fontWeight: _choseMapType == entry.key
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    );
                   },
                 ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Visibility(
+                  visible: _choseMapType == 0,
+                  child: FloatingActionButton(
+                    backgroundColor: THEME[0],
+                    onPressed: () {
+                      showModalBottomSheet<void>(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return Container(
+                            color: THEME[2],
+                            padding: EdgeInsets.only(top: 20, bottom: 20),
+                            height: 240,
+                            child: Column(
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    for (var entry in [
+                                      "Standard",
+                                      "Silver",
+                                      "Retro",
+                                    ].asMap().entries)
+                                      _buildMapStyleButton(
+                                          entry.value, entry.key),
+                                  ],
+                                ),
+                                const SizedBox(
+                                  height: 30,
+                                ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    for (var entry in [
+                                      "Dark",
+                                      "Night",
+                                      "Aubergine",
+                                    ].asMap().entries)
+                                      _buildMapStyleButton(
+                                          entry.value, entry.key + 3),
+                                  ],
+                                )
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    child: Icon(
+                      Icons.style_rounded,
+                      color: THEME[1],
+                    ),
+                  ),
+                )
               ],
             ),
           ),

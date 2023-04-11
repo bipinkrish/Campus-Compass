@@ -88,7 +88,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 DropdownButton<String>(
-                  borderRadius: BorderRadius.circular(10.0),
+                  borderRadius: BorderRadius.circular(10),
                   dropdownColor: THEME[0],
                   hint: Row(
                     children: [

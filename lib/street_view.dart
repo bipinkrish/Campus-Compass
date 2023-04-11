@@ -40,7 +40,7 @@ class _FreeViewState extends State<FreeView> {
               },
               backgroundColor: THEME[0],
               foregroundColor: THEME[1],
-              child: const Icon(Icons.arrow_back),
+              child: const Icon(Icons.arrow_back_rounded),
             ),
           ),
           // name panel
@@ -118,7 +118,7 @@ class _FreeViewState extends State<FreeView> {
               foregroundColor: THEME[1],
               backgroundColor: THEME[2],
               child: const Icon(
-                Icons.map_outlined,
+                Icons.map_rounded,
               ),
             ),
           ),
