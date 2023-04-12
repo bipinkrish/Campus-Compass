@@ -3,7 +3,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_google_street_view/flutter_google_street_view.dart'
-    show FlutterGoogleStreetView, StreetViewSource, StreetViewController;
+    show
+        FlutterGoogleStreetView,
+        StreetViewSource,
+        StreetViewController,
+        StreetViewPanoramaCamera;
 
 import 'package:campusmap/main.dart' show THEME;
 import 'package:campusmap/values.dart' show mapAnchors, mapAngles, mapNames;
@@ -17,6 +21,7 @@ class FreeView extends StatefulWidget {
 
 class _FreeViewState extends State<FreeView> {
   int panID = 1;
+  late StreetViewController streetMapController;
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +33,9 @@ class _FreeViewState extends State<FreeView> {
             initSource: StreetViewSource.outdoor,
             initBearing: mapAngles[panID],
             zoomGesturesEnabled: true,
-            onStreetViewCreated: (StreetViewController controller) async {},
+            onStreetViewCreated: (StreetViewController controller) {
+              streetMapController = controller;
+            },
           ),
           // back button
           Positioned(

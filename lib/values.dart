@@ -22,8 +22,8 @@ List<String> mapNames = [
 ];
 
 List<double> mapAngles = [
-  35, //Front Gate
+  90, //Front Gate
   90, // Admin Block
-  -105, // Library
-  -130 // CS Department
+  225, // Library
+  230 // CS Department
 ];

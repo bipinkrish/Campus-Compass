@@ -27,6 +27,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'
         LatLngBounds,
         GoogleMap,
         MapType;
+import 'package:cached_network_image/cached_network_image.dart'
+    show CachedNetworkImageProvider;
 
 import 'package:campusmap/main.dart' show THEME, API_KEY;
 import 'package:campusmap/language_texts.dart'
@@ -90,7 +92,7 @@ class MapViewState extends State<MapView> {
     MapStyle.aubergine
   ];
   List<IconData> mapStyleIcons = [];
-  int _choseMapStyle = 3;
+  int _choseMapStyle = 4;
 
   late PolylinePoints polylinePoints;
   Set<Polyline> _polylines = <Polyline>{};
@@ -98,6 +100,8 @@ class MapViewState extends State<MapView> {
 
   final double _tilt = 0.0;
   final double _bearing = 0.0;
+  Color polyColor = Colors.green;
+  int zoomoutTime = 2;
 
   Widget _textField({
     required TextEditingController controller,
@@ -106,7 +110,6 @@ class MapViewState extends State<MapView> {
     required String hint,
     required double width,
     required Icon prefixIcon,
-    Widget? suffixIcon,
     required Function(String) locationCallback,
   }) {
     return SizedBox(
@@ -122,7 +125,6 @@ class MapViewState extends State<MapView> {
         focusNode: focusNode,
         decoration: InputDecoration(
           prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
           labelText: label,
           floatingLabelBehavior: FloatingLabelBehavior.never,
           labelStyle: TextStyle(
@@ -151,6 +153,17 @@ class MapViewState extends State<MapView> {
           contentPadding: const EdgeInsets.all(15),
           hintText: hint,
           hintStyle: TextStyle(color: THEME[3]),
+          suffixIcon: isButtonEnabled
+              ? GestureDetector(
+                  onTap: () {
+                    controller.clear();
+                  },
+                  child: Icon(
+                    Icons.clear,
+                    color: THEME[3],
+                  ),
+                )
+              : null,
         ),
         cursorColor: THEME[3],
       ),
@@ -158,41 +171,52 @@ class MapViewState extends State<MapView> {
   }
 
   Widget _buildMapStyleButton(String label, int index) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        FloatingActionButton(
-          backgroundColor: THEME[0],
-          onPressed: () {
-            if (_choseMapStyle != index) {
-              Navigator.pop(context);
-              setState(() {
-                _choseMapStyle = index;
-                mapController.setMapStyle(mapStyles[_choseMapStyle]);
-              });
-            }
-          },
-          shape: _choseMapStyle == index
-              ? RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(width: 2, color: THEME[3]),
-                )
-              : null,
-          child: Icon(
-            Icons.line_style_rounded,
-            color: THEME[1],
-          ),
+    return Expanded(
+      child: InkWell(
+        onTap: () {
+          if (_choseMapStyle != index) {
+            Navigator.pop(context);
+            setState(() {
+              _choseMapStyle = index;
+              mapController.setMapStyle(mapStyles[_choseMapStyle]);
+            });
+          }
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(5),
+                border: Border.all(
+                  color:
+                      _choseMapStyle == index ? THEME[3] : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: Image(
+                  width: _choseMapStyle == index ? 60 : 50,
+                  image: CachedNetworkImageProvider(
+                    'https://archive.org/download/googlemapstyles/${label.toLowerCase()}.png',
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: THEME[1],
+                fontWeight: _choseMapStyle == index
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: TextStyle(
-            color: THEME[1],
-            fontWeight:
-                _choseMapStyle == index ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -238,7 +262,6 @@ class MapViewState extends State<MapView> {
     }
   }
 
-  // Method for calculating the distance between two places
   Future<bool> _getDirections() async {
     try {
       // Retrieving placemarks from addresses
@@ -337,7 +360,7 @@ class MapViewState extends State<MapView> {
       int totalDuration = values["routes"][0]["legs"][0]["duration"]["value"];
 
       // zoom back to my location / current location
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(Duration(seconds: zoomoutTime));
       mapController.animateCamera(
         CameraUpdate.newLatLngZoom(
           LatLng(startLatitude, startLongitude),
@@ -447,7 +470,7 @@ class MapViewState extends State<MapView> {
     PolylineId walkingRouteId = const PolylineId('walkingRoute');
     Polyline walkingRoutePolyline = Polyline(
       polylineId: walkingRouteId,
-      color: Colors.blue,
+      color: polyColor,
       width: 10,
       patterns: [PatternItem.dot, PatternItem.gap(30)],
       points: polylineCoordinates,
@@ -463,22 +486,6 @@ class MapViewState extends State<MapView> {
   List<dynamic> _maneuvers = [];
   List<dynamic> _stepdurations = [];
   List<dynamic> _stepdistances = [];
-
-  Future<void> _setNewValues() async {
-    mapController.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(
-            _currentPosition.latitude,
-            _currentPosition.longitude,
-          ),
-          zoom: await mapController.getZoomLevel(),
-          tilt: _tilt,
-          bearing: _bearing,
-        ),
-      ),
-    );
-  }
 
   Future<void> _updatePolylines() async {
     // Calculate the distance between the current position and the last position of the user
@@ -501,18 +508,7 @@ class MapViewState extends State<MapView> {
         polylineCoordinates.removeAt(0);
         index++;
       }
-      _polylines.removeWhere(
-          (polyline) => polyline.polylineId.value == 'walkingRoute');
-      PolylineId walkingRouteId = const PolylineId('walkingRoute');
-      Polyline walkingRoutePolyline = Polyline(
-        polylineId: walkingRouteId,
-        color: Colors.blue,
-        width: 10,
-        patterns: [PatternItem.dot, PatternItem.gap(30)],
-        points: polylineCoordinates,
-      );
       setState(() {
-        _polylines.add(walkingRoutePolyline);
         _lastPosition = _currentPosition;
       });
     }
@@ -542,7 +538,7 @@ class MapViewState extends State<MapView> {
                 _currentPosition.longitude,
                 destination.latitude,
                 destination.longitude) <
-            updateDist) {
+            updateDist * 2) {
           break;
         }
       }
@@ -703,7 +699,7 @@ class MapViewState extends State<MapView> {
                       label: _translations!["destination"] ?? "Destination",
                       hint: _translations!["cd"] ?? "Choose destination",
                       prefixIcon: Icon(
-                        Icons.stop_rounded,
+                        Icons.place_rounded,
                         color: THEME[1],
                       ),
                       controller: destinationAddressController,
@@ -907,7 +903,6 @@ class MapViewState extends State<MapView> {
                   onPressed: () async {
                     bool permission = await _requestPermission();
                     if (permission) {
-                      _setNewValues();
                       _getCurrentLocation();
                     }
                   },
@@ -997,7 +992,7 @@ class MapViewState extends State<MapView> {
                         builder: (BuildContext context) {
                           return Container(
                             color: THEME[2],
-                            padding: EdgeInsets.only(top: 20, bottom: 20),
+                            padding: const EdgeInsets.only(top: 40, bottom: 20),
                             height: 240,
                             child: Column(
                               children: [
