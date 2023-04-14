@@ -32,8 +32,9 @@ import 'package:cached_network_image/cached_network_image.dart'
 
 import 'package:campusmap/main.dart' show THEME, API_KEY;
 import 'package:campusmap/language_texts.dart'
-    show getLanguageCode, getLanguage;
+    show getLanguage, setLanguage, LANGUAGES, LANGUAGE_CODES, getLanguageCode;
 import 'package:campusmap/map_styles.dart' show MapStyle;
+import 'package:campusmap/street_view.dart' show FreeView;
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -194,12 +195,17 @@ class MapViewState extends State<MapView> {
                   width: 2,
                 ),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(5),
-                child: Image(
-                  width: _choseMapStyle == index ? 60 : 50,
-                  image: CachedNetworkImageProvider(
-                    'https://archive.org/download/googlemapstyles/${label.toLowerCase()}.png',
+              child: Padding(
+                padding: _choseMapStyle == index
+                    ? const EdgeInsets.all(2)
+                    : EdgeInsets.zero,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: Image(
+                    width: _choseMapStyle == index ? 60 : 50,
+                    image: CachedNetworkImageProvider(
+                      'https://archive.org/download/googlemapstyles/${label.toLowerCase()}.png',
+                    ),
                   ),
                 ),
               ),
@@ -594,6 +600,11 @@ class MapViewState extends State<MapView> {
     }
   }
 
+  void _setLanguage(String lang) async {
+    setLanguage(lang);
+    _loadTranslations();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -630,6 +641,9 @@ class MapViewState extends State<MapView> {
             onMapCreated: (GoogleMapController controller) {
               mapController = controller;
               mapController.setMapStyle(mapStyles[_choseMapStyle]);
+            },
+            onTap: (tappedLatLng) {
+              destinationAddressFocusNode.unfocus();
             },
           ),
           // totals
@@ -1044,19 +1058,145 @@ class MapViewState extends State<MapView> {
           Positioned(
             top: 50.0,
             left: 12.0,
-            child: FloatingActionButton(
-              onPressed: () async {
-                await _tts.stop();
-                Navigator.of(context).pop();
+            child: Builder(
+              builder: (BuildContext context) {
+                return Column(
+                  children: [
+                    FloatingActionButton(
+                      onPressed: () {
+                        Scaffold.of(context).openDrawer();
+                      },
+                      backgroundColor: THEME[0],
+                      foregroundColor: THEME[1],
+                      child: const Icon(
+                        Icons.menu_rounded,
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    FloatingActionButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const FreeView()),
+                        );
+                      },
+                      backgroundColor: THEME[0],
+                      foregroundColor: THEME[1],
+                      child: const Icon(
+                        Icons.streetview_rounded,
+                      ),
+                    ),
+                  ],
+                );
               },
-              backgroundColor: THEME[0],
-              foregroundColor: THEME[1],
-              child: const Icon(
-                Icons.arrow_back,
-              ),
             ),
           ),
         ],
+      ),
+      drawer: Drawer(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              children: [
+                DrawerHeader(
+                  decoration: BoxDecoration(
+                    color: THEME[0],
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.settings_rounded,
+                          color: THEME[3],
+                        ),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        Text(
+                          _translations!["settings"] ?? "Settings",
+                          style: TextStyle(
+                              color: THEME[1],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                DropdownButton<String>(
+                  borderRadius: BorderRadius.circular(10),
+                  dropdownColor: THEME[0],
+                  hint: Row(
+                    children: [
+                      Icon(
+                        Icons.language_rounded,
+                        color: THEME[0],
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Text(
+                        _translations!["languages"] ?? "Languages",
+                        style: TextStyle(
+                          color: THEME[0],
+                        ),
+                      ),
+                    ],
+                  ),
+                  items: [
+                    for (int i = 0; i < LANGUAGES.length; i++)
+                      DropdownMenuItem(
+                        value: LANGUAGE_CODES[i],
+                        child: Center(
+                          child: Text(
+                            LANGUAGES[i],
+                            style: TextStyle(
+                              color: THEME[1],
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      _setLanguage(value ?? "en");
+                    });
+                  },
+                ),
+              ],
+            ),
+            ListTile(
+              tileColor: THEME[0],
+              title: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Icon(
+                      Icons.keyboard_double_arrow_left_rounded,
+                      color: THEME[3],
+                    ),
+                    Text(
+                      _translations!["close"] ?? "Close",
+                      style: TextStyle(color: THEME[1]),
+                    ),
+                    Icon(
+                      Icons.keyboard_double_arrow_left_rounded,
+                      color: THEME[3],
+                    ),
+                  ],
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

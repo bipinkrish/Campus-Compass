@@ -2,7 +2,7 @@
 
 import 'dart:async' show Timer;
 import 'package:flutter/material.dart';
-import 'package:campusmap/home_page.dart' show HomePage;
+import 'package:campusmap/directions_map.dart' show MapView;
 
 // THEME
 List<Color> THEME = const [
@@ -47,7 +47,7 @@ class _SplashScreenState extends State<SplashScreen> {
       () => Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const HomePage(),
+          builder: (context) => const MapView(),
         ),
       ),
     );
