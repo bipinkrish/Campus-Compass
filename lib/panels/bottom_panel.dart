@@ -1,6 +1,7 @@
 // ignore_for_file: non_constant_identifier_names, no_leading_underscores_for_local_identifiers
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart' show SvgPicture;
 
 // -----------------------------------------------------------------------------------------------
 
@@ -77,9 +78,15 @@ FloatingActionButton getGoButton(THEME, isButtonEnabled, goButtonPressed) {
     onPressed: isButtonEnabled ? (() => goButtonPressed()) : null,
     backgroundColor: isButtonEnabled ? THEME[0] : THEME[3],
     foregroundColor: THEME[1],
-    child: const Icon(
-      Icons.stacked_line_chart_rounded,
-    ),
+    child: isButtonEnabled
+        ? Image.asset(
+            "assets/logos/logoanim.gif",
+            width: 35,
+          )
+        : SvgPicture.asset(
+            "assets/logos/logo.svg",
+            width: 42,
+          ),
   );
 }
 
@@ -102,20 +109,21 @@ Container getBottomPanel(
         children: [
           // Destination Field
           _textField(
-              label: _translations!["destination"] ?? "Destination",
-              hint: _translations!["cd"] ?? "Choose destination",
-              prefixIcon: Icon(
-                Icons.place_rounded,
-                color: THEME[1],
-              ),
-              controller: destinationAddressController,
-              focusNode: destinationAddressFocusNode,
-              width: width,
-              locationCallback: (String value) {
-                setDestinationAddress(value);
-              },
-              THEME: THEME,
-              isButtonEnabled: isButtonEnabled),
+            label: _translations!["destination"] ?? "Destination",
+            hint: _translations!["cd"] ?? "Choose destination",
+            prefixIcon: Icon(
+              Icons.place_rounded,
+              color: THEME[1],
+            ),
+            controller: destinationAddressController,
+            focusNode: destinationAddressFocusNode,
+            width: width,
+            locationCallback: (String value) {
+              setDestinationAddress(value);
+            },
+            THEME: THEME,
+            isButtonEnabled: isButtonEnabled,
+          ),
           // Go button
           getGoButton(
             THEME,

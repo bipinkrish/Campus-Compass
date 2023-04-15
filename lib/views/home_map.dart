@@ -49,16 +49,6 @@ class MapView extends StatefulWidget {
 }
 
 class MapViewState extends State<MapView> {
-  final CameraPosition _initialLocation = const CameraPosition(
-    target: LatLng(
-      sitLat,
-      sitLng,
-    ),
-    zoom: 18,
-    tilt: 0,
-    bearing: 0,
-  );
-
   late GoogleMapController mapController;
   late Position _currentPosition;
   // late double _startLat, _startLng, _destLat, _desLng;
@@ -541,8 +531,8 @@ class MapViewState extends State<MapView> {
 
   @override
   Widget build(BuildContext context) {
-    // var height = MediaQuery.of(context).size.height;
-    var width = MediaQuery.of(context).size.width;
+    // double height = MediaQuery.of(context).size.height;
+    double width = MediaQuery.of(context).size.width;
 
     return Scaffold(
       body: Stack(
@@ -550,7 +540,13 @@ class MapViewState extends State<MapView> {
           // Map View
           GoogleMap(
             markers: Set<Marker>.from(markers),
-            initialCameraPosition: _initialLocation,
+            initialCameraPosition: const CameraPosition(
+              target: LatLng(
+                sitLat - 0.001,
+                sitLng + 0.001,
+              ),
+              zoom: 16,
+            ),
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
             mapToolbarEnabled: false,
@@ -562,6 +558,20 @@ class MapViewState extends State<MapView> {
             onMapCreated: (GoogleMapController controller) {
               mapController = controller;
               mapController.setMapStyle(mapStyles[_choseMapStyle]);
+              Future.delayed(
+                const Duration(milliseconds: 500),
+                () => mapController.animateCamera(
+                  CameraUpdate.newCameraPosition(
+                    const CameraPosition(
+                      target: LatLng(
+                        sitLat,
+                        sitLng,
+                      ),
+                      zoom: 18,
+                    ),
+                  ),
+                ),
+              );
             },
             onTap: (tappedLatLng) {
               destinationAddressFocusNode.unfocus();
