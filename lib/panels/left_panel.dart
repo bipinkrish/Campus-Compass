@@ -1,7 +1,7 @@
 // ignore_for_file: non_constant_identifier_names, prefer_typing_uninitialized_variables, library_private_types_in_public_api, camel_case_types, must_be_immutable, no_leading_underscores_for_local_identifiers
 
 import 'package:flutter/material.dart';
-import 'package:campusmap/language_texts.dart'
+import 'package:campusmap/presets/language_texts.dart'
     show setLanguage, LANGUAGES, LANGUAGE_CODES;
 
 // -----------------------------------------------------------------------------------------------

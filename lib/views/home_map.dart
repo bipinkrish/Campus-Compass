@@ -29,17 +29,17 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'
         MapType;
 
 import 'package:campusmap/main.dart' show THEME, API_KEY;
-import 'package:campusmap/language_texts.dart'
+import 'package:campusmap/presets/language_texts.dart'
     show getLanguage, getLanguageCode;
-import 'package:campusmap/map_styles.dart' show MapStyle;
-import 'package:campusmap/street_view.dart' show getFreeView;
-import 'package:campusmap/left_panel.dart' show getDrawer, getMenuButton;
-import 'package:campusmap/right_panel.dart'
+import 'package:campusmap/presets/map_styles.dart' show MapStyle;
+import 'package:campusmap/views/street_view.dart' show getFreeView;
+import 'package:campusmap/panels/left_panel.dart' show getDrawer, getMenuButton;
+import 'package:campusmap/panels/right_panel.dart'
     show getMyLoactionButton, getMapTypeButton, getMapStylesButton;
-import 'package:campusmap/middle_panel.dart' show getMiddlePanel;
-import 'package:campusmap/bottom_panel.dart'
+import 'package:campusmap/panels/middle_panel.dart' show getMiddlePanel;
+import 'package:campusmap/panels/bottom_panel.dart'
     show getBottomPanel, getTotalsPanel;
-import 'package:campusmap/values.dart' show sitLat, sitLng;
+import 'package:campusmap/presets/values.dart' show sitLat, sitLng;
 
 class MapView extends StatefulWidget {
   const MapView({super.key});

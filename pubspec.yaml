@@ -28,7 +28,13 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/logoanim.gif
+    - assets/logos/logoanim.gif
+    - assets/styles/aubergine.png
+    - assets/styles/dark.png
+    - assets/styles/night.png
+    - assets/styles/retro.png
+    - assets/styles/silver.png
+    - assets/styles/standard.png
 
 flutter_native_splash:
 

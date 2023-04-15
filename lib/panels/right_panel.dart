@@ -138,11 +138,9 @@ Expanded _buildMapStyleButton(String label, int index, _choseMapStyle, THEME,
                   : EdgeInsets.zero,
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(5),
-                child: Image(
+                child: Image.asset(
+                  'assets/styles/${label.toLowerCase()}.png',
                   width: _choseMapStyle == index ? 60 : 50,
-                  image: CachedNetworkImageProvider(
-                    'https://archive.org/download/googlemapstyles/${label.toLowerCase()}.png',
-                  ),
                 ),
               ),
             ),

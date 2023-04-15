@@ -6,7 +6,8 @@ import 'package:flutter_google_street_view/flutter_google_street_view.dart'
     show FlutterGoogleStreetView, StreetViewSource, StreetViewController;
 
 import 'package:campusmap/main.dart' show THEME;
-import 'package:campusmap/values.dart' show mapAnchors, mapAngles, mapNames;
+import 'package:campusmap/presets/values.dart'
+    show mapAnchors, mapAngles, mapNames;
 
 FloatingActionButton getFreeView(BuildContext context) {
   return FloatingActionButton(
@@ -34,6 +35,9 @@ class FreeView extends StatefulWidget {
 class _FreeViewState extends State<FreeView> {
   int panID = 1;
   late StreetViewController streetMapController;
+  String _mapName = mapNames[1];
+  String _mapAnchor = mapAnchors[1];
+  double _mapAngle = mapAngles[1];
 
   @override
   Widget build(BuildContext context) {
@@ -41,9 +45,9 @@ class _FreeViewState extends State<FreeView> {
       body: Stack(
         children: [
           FlutterGoogleStreetView(
-            initPanoId: mapAnchors[panID],
+            initPanoId: _mapAnchor,
             initSource: StreetViewSource.outdoor,
-            initBearing: mapAngles[panID],
+            initBearing: _mapAngle,
             zoomGesturesEnabled: true,
             onStreetViewCreated: (StreetViewController controller) {
               streetMapController = controller;
@@ -75,7 +79,7 @@ class _FreeViewState extends State<FreeView> {
                     child: Padding(
                       padding: const EdgeInsets.all(10),
                       child: Text(
-                        mapNames[panID],
+                        _mapName,
                         style: TextStyle(
                             color: THEME[1],
                             fontSize: 22,
@@ -106,6 +110,9 @@ class _FreeViewState extends State<FreeView> {
                               Navigator.pop(context);
                               setState(() {
                                 panID = i;
+                                _mapAnchor = mapAnchors[panID];
+                                _mapName = mapNames[panID];
+                                _mapAngle = mapAngles[panID];
                               });
                             },
                             child: Text(

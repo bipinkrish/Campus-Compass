@@ -2,7 +2,7 @@
 
 import 'dart:async' show Timer;
 import 'package:flutter/material.dart';
-import 'package:campusmap/home_map.dart' show MapView;
+import 'package:campusmap/views/home_map.dart' show MapView;
 
 // THEME
 List<Color> THEME = const [
@@ -57,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: THEME[0],
-      child: Image.asset("assets/logoanim.gif"),
+      child: Image.asset("assets/logos/logoanim.gif"),
     );
   }
 }
