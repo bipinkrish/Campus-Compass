@@ -2,8 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' show Geolocator, LocationPermission;
-import 'package:cached_network_image/cached_network_image.dart'
-    show CachedNetworkImageProvider;
 
 // -----------------------------------------------------------------------------------------------
 
