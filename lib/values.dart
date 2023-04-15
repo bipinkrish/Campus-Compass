@@ -1,3 +1,6 @@
+const sitLat = 13.3268473;
+const sitLng = 77.1261341;
+
 const String sitFrontGate =
     "CAoSLEFGMVFpcE1lbERDTWZ6TDFxYnV1c2dmWGlzZUcxSFNVQ0Y1b1RsY3hFbHV6";
 const String adminBlock =

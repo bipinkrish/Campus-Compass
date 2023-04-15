@@ -2,7 +2,7 @@
 
 import 'dart:async' show Timer;
 import 'package:flutter/material.dart';
-import 'package:campusmap/directions_map.dart' show MapView;
+import 'package:campusmap/home_map.dart' show MapView;
 
 // THEME
 List<Color> THEME = const [

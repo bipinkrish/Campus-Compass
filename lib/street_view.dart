@@ -3,14 +3,26 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_google_street_view/flutter_google_street_view.dart'
-    show
-        FlutterGoogleStreetView,
-        StreetViewSource,
-        StreetViewController,
-        StreetViewPanoramaCamera;
+    show FlutterGoogleStreetView, StreetViewSource, StreetViewController;
 
 import 'package:campusmap/main.dart' show THEME;
 import 'package:campusmap/values.dart' show mapAnchors, mapAngles, mapNames;
+
+FloatingActionButton getFreeView(BuildContext context) {
+  return FloatingActionButton(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const FreeView()),
+      );
+    },
+    backgroundColor: THEME[0],
+    foregroundColor: THEME[1],
+    child: const Icon(
+      Icons.streetview_rounded,
+    ),
+  );
+}
 
 class FreeView extends StatefulWidget {
   const FreeView({super.key});
