@@ -1,6 +1,5 @@
 // ignore_for_file: unused_import, constant_identifier_names, non_constant_identifier_names
 
-import 'dart:async' show Timer;
 import 'package:flutter/material.dart';
 import 'package:campusmap/views/home_map.dart' show MapView;
 

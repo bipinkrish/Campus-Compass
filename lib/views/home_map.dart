@@ -1,9 +1,6 @@
 // ignore_for_file: depend_on_referenced_packages, avoid_print, use_build_context_synchronously, non_constant_identifier_names
 
-import 'dart:convert' show jsonDecode;
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http show get, Response;
 import 'package:flutter_tts/flutter_tts.dart' show FlutterTts;
 import 'package:flutter_polyline_points/flutter_polyline_points.dart'
     show PolylinePoints, PointLatLng;
@@ -29,7 +26,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'
         GoogleMap,
         MapType;
 
-import 'package:campusmap/main.dart' show THEME, API_KEY;
+import 'package:campusmap/main.dart' show THEME;
 import 'package:campusmap/presets/language_texts.dart'
     show getLanguage, getLanguageCode;
 import 'package:campusmap/presets/map_styles.dart' show MapStyle;
@@ -43,6 +40,7 @@ import 'package:campusmap/panels/bottom_panel.dart'
     show getBottomPanel, getTotalsPanel;
 import 'package:campusmap/presets/values.dart'
     show sitLat, sitLng, collegeBoundaryD;
+import 'package:campusmap/requests.dart' show getDirections;
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -209,10 +207,8 @@ class MapViewState extends State<MapView> {
       // getting accurate route
       LatLng origin = LatLng(startLatitude, startLongitude);
       LatLng destination = LatLng(destinationLatitude, destinationLongitude);
-      String url =
-          "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=$mode&language=$_language&units=metric&key=$API_KEY";
-      http.Response response = await http.get(Uri.parse(url));
-      Map values = jsonDecode(response.body);
+
+      var values = await getDirections(origin, destination, mode, _language);
 
       double southWestLatitude =
           values["routes"][0]["bounds"]["southwest"]["lat"];
