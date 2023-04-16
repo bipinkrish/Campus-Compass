@@ -53,7 +53,7 @@ Widget _textField(
             width: 2,
           ),
         ),
-        contentPadding: const EdgeInsets.all(15),
+        contentPadding: const EdgeInsets.all(2),
         hintText: hint,
         hintStyle: TextStyle(color: THEME[3]),
         suffixIcon: isButtonEnabled

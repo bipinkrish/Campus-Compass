@@ -1,4 +1,4 @@
-// ignore_for_file: depend_on_referenced_packages, avoid_print, use_build_context_synchronously
+// ignore_for_file: depend_on_referenced_packages, avoid_print, use_build_context_synchronously, non_constant_identifier_names
 
 import 'dart:convert' show jsonDecode;
 
@@ -9,8 +9,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart'
     show PolylinePoints, PointLatLng;
 import 'package:geocoding/geocoding.dart'
     show Placemark, placemarkFromCoordinates, Location, locationFromAddress;
-import 'package:geolocator/geolocator.dart'
-    show Position, Geolocator, LocationAccuracy;
+import 'package:geolocator/geolocator.dart' show Position, Geolocator;
 import 'package:google_maps_flutter/google_maps_flutter.dart'
     show
         CameraPosition,
@@ -19,6 +18,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'
         Marker,
         PolylineId,
         Polyline,
+        Polygon,
+        PolygonId,
         PatternItem,
         CameraUpdate,
         MarkerId,
@@ -33,13 +34,15 @@ import 'package:campusmap/presets/language_texts.dart'
     show getLanguage, getLanguageCode;
 import 'package:campusmap/presets/map_styles.dart' show MapStyle;
 import 'package:campusmap/views/street_view.dart' show getFreeView;
-import 'package:campusmap/panels/left_panel.dart' show getDrawer, getMenuButton;
+import 'package:campusmap/panels/left_panel.dart'
+    show getDrawer, getMenuButton, getClearButton;
 import 'package:campusmap/panels/right_panel.dart'
     show getMyLoactionButton, getMapTypeButton, getMapStylesButton;
 import 'package:campusmap/panels/middle_panel.dart' show getMiddlePanel;
 import 'package:campusmap/panels/bottom_panel.dart'
     show getBottomPanel, getTotalsPanel;
-import 'package:campusmap/presets/values.dart' show sitLat, sitLng;
+import 'package:campusmap/presets/values.dart'
+    show sitLat, sitLng, collegeBoundaryD;
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -60,7 +63,7 @@ class MapViewState extends State<MapView> {
   final startAddressFocusNode = FocusNode();
   final destinationAddressFocusNode = FocusNode();
 
-  String _startAddress = '';
+  // String _startAddress = '';
   String _destinationAddress = '';
   String? _placeDistance;
   String? _nxtDistance;
@@ -113,11 +116,23 @@ class MapViewState extends State<MapView> {
   double updateDist = 5;
   bool isButtonEnabled = false;
   String snackText = "";
+  bool _reload = false;
+
+  Set<Polygon> collegeBoundary = {
+    Polygon(
+      polygonId: const PolygonId('SIT'),
+      points: collegeBoundaryD.map((list) => LatLng(list[1], list[0])).toList(),
+      strokeWidth: 1,
+      strokeColor: Colors.blue,
+      fillColor: Colors.blue.withOpacity(0.1),
+      geodesic: true,
+    )
+  };
 
   // Method for retrieving the current location
   Future<void> _getCurrentLocation() async {
-    await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)
-        .then((Position position) async {
+    // able to reduce battery if forceAndroidLocationManager is used
+    await Geolocator.getCurrentPosition().then((Position position) async {
       setState(() {
         _currentPosition = position;
         mapController.animateCamera(
@@ -149,7 +164,7 @@ class MapViewState extends State<MapView> {
         _currentAddress =
             "${place.name}, ${place.locality}, ${place.postalCode}, ${place.country}";
         startAddressController.text = _currentAddress;
-        _startAddress = _currentAddress;
+        // _startAddress = _currentAddress;
       });
     } catch (e) {
       print(e);
@@ -159,18 +174,13 @@ class MapViewState extends State<MapView> {
   Future<bool> _getDirections() async {
     try {
       // Retrieving placemarks from addresses
-      List<Location>? startPlacemark = await locationFromAddress(_startAddress);
+      // List<Location>? startPlacemark = await locationFromAddress(_startAddress);
       List<Location>? destinationPlacemark =
           await locationFromAddress(_destinationAddress);
 
       // Use the retrieved coordinates of the current position, instead of the address if the start position is user's current position, as it results in better accuracy.
-      double startLatitude = _startAddress == _currentAddress
-          ? _currentPosition.latitude
-          : startPlacemark[0].latitude;
-
-      double startLongitude = _startAddress == _currentAddress
-          ? _currentPosition.longitude
-          : startPlacemark[0].longitude;
+      double startLatitude = _currentPosition.latitude;
+      double startLongitude = _currentPosition.longitude;
 
       double destinationLatitude = destinationPlacemark[0].latitude;
       double destinationLongitude = destinationPlacemark[0].longitude;
@@ -189,8 +199,6 @@ class MapViewState extends State<MapView> {
         ),
         icon: BitmapDescriptor.defaultMarker,
       );
-
-      // Adding the markers to the list
       markers.add(destinationMarker);
 
       // _startLat = startLatitude;
@@ -202,7 +210,7 @@ class MapViewState extends State<MapView> {
       LatLng origin = LatLng(startLatitude, startLongitude);
       LatLng destination = LatLng(destinationLatitude, destinationLongitude);
       String url =
-          "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=$mode&key=$API_KEY&language=$_language&units=metric";
+          "https://maps.googleapis.com/maps/api/directions/json?origin=${origin.latitude},${origin.longitude}&destination=${destination.latitude},${destination.longitude}&mode=$mode&language=$_language&units=metric&key=$API_KEY";
       http.Response response = await http.get(Uri.parse(url));
       Map values = jsonDecode(response.body);
 
@@ -413,8 +421,7 @@ class MapViewState extends State<MapView> {
       LatLng destination = _destinations[i];
       while (true) {
         await Future.delayed(const Duration(seconds: 1));
-        _currentPosition = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
+        _currentPosition = await Geolocator.getCurrentPosition();
 
         _updatePolylines();
 
@@ -466,10 +473,10 @@ class MapViewState extends State<MapView> {
     });
   }
 
-  Future<void> goButtonPressed() async {
+  void clearAll(bool all) async {
     setState(() {
       isButtonEnabled = false;
-      startAddressFocusNode.unfocus();
+      // startAddressFocusNode.unfocus();
       destinationAddressFocusNode.unfocus();
       if (markers.isNotEmpty) {
         markers.clear();
@@ -480,6 +487,12 @@ class MapViewState extends State<MapView> {
       if (polylineCoordinates.isNotEmpty) {
         polylineCoordinates.clear();
       }
+      if (_directions.isEmpty) {
+        _directions.clear();
+      }
+      if (_destinations.isEmpty) {
+        _destinations.clear();
+      }
       _curRoute = null;
       _curManeuver = null;
       _nxtDistance = null;
@@ -487,6 +500,19 @@ class MapViewState extends State<MapView> {
       _placeDistance = null;
       _placeDuration = null;
     });
+    await _tts.stop();
+    if (all) {
+      setState(() {
+        destinationAddressController.text = "";
+        _reload = false;
+      });
+      setDestinationAddress(destinationAddressController.text);
+    }
+  }
+
+  Future<void> goButtonPressed() async {
+    clearAll(false);
+
     if (startAddressController.text.isEmpty) {
       await _getCurrentLocation();
     }
@@ -494,7 +520,7 @@ class MapViewState extends State<MapView> {
       if (isDone) {
         snackText = _translations!["dcs"] ?? "Distance Calculated Successfully";
         setState(() async {
-          await _tts.stop();
+          _reload = true;
           await _speakDirections();
         });
       } else {
@@ -505,6 +531,8 @@ class MapViewState extends State<MapView> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 1),
           showCloseIcon: true,
           closeIconColor: THEME[1],
           backgroundColor: THEME[0],
@@ -539,44 +567,71 @@ class MapViewState extends State<MapView> {
         children: <Widget>[
           // Map View
           GoogleMap(
-            markers: Set<Marker>.from(markers),
-            initialCameraPosition: const CameraPosition(
-              target: LatLng(
-                sitLat - 0.001,
-                sitLng + 0.001,
+              markers: Set<Marker>.from(markers),
+              initialCameraPosition: const CameraPosition(
+                target: LatLng(
+                  sitLat - 0.001,
+                  sitLng + 0.001,
+                ),
+                zoom: 16,
               ),
-              zoom: 16,
-            ),
-            myLocationEnabled: true,
-            myLocationButtonEnabled: false,
-            mapToolbarEnabled: false,
-            mapType: mapTypes[_choseMapType],
-            zoomControlsEnabled: false,
-            indoorViewEnabled: true,
-            compassEnabled: false,
-            polylines: polylines,
-            onMapCreated: (GoogleMapController controller) {
-              mapController = controller;
-              mapController.setMapStyle(mapStyles[_choseMapStyle]);
-              Future.delayed(
-                const Duration(milliseconds: 500),
-                () => mapController.animateCamera(
-                  CameraUpdate.newCameraPosition(
-                    const CameraPosition(
-                      target: LatLng(
-                        sitLat,
-                        sitLng,
+              myLocationEnabled: true,
+              myLocationButtonEnabled: false,
+              mapToolbarEnabled: false,
+              mapType: mapTypes[_choseMapType],
+              zoomControlsEnabled: false,
+              indoorViewEnabled: true,
+              compassEnabled: false,
+              polylines: polylines,
+              polygons: collegeBoundary,
+              onMapCreated: (GoogleMapController controller) {
+                mapController = controller;
+                mapController.setMapStyle(mapStyles[_choseMapStyle]);
+                Future.delayed(
+                  const Duration(milliseconds: 1000),
+                  () => mapController.animateCamera(
+                    CameraUpdate.newCameraPosition(
+                      const CameraPosition(
+                        target: LatLng(
+                          sitLat,
+                          sitLng,
+                        ),
+                        zoom: 18,
                       ),
-                      zoom: 18,
                     ),
                   ),
-                ),
-              );
-            },
-            onTap: (tappedLatLng) {
-              destinationAddressFocusNode.unfocus();
-            },
-          ),
+                );
+              },
+              onTap: (tappedLatLng) async {
+                if (destinationAddressController.text.isEmpty &&
+                    !destinationAddressFocusNode.hasFocus) {
+                  List<Placemark> p = await placemarkFromCoordinates(
+                      tappedLatLng.latitude, tappedLatLng.longitude);
+                  if (p.isNotEmpty) {
+                    setState(() {
+                      destinationAddressController.text =
+                          "${p[0].name}, ${p[0].locality}, ${p[0].postalCode}, ${p[0].country}";
+                    });
+                    setDestinationAddress(destinationAddressController.text);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Center(
+                          child: Text(
+                            'Destination Updated',
+                            style: TextStyle(color: THEME[1]),
+                          ),
+                        ),
+                        duration: const Duration(seconds: 1),
+                        behavior: SnackBarBehavior.floating,
+                        showCloseIcon: true,
+                        closeIconColor: THEME[1],
+                        backgroundColor: THEME[0],
+                      ),
+                    );
+                  }
+                }
+                destinationAddressFocusNode.unfocus();
+              }),
           // Totals Panel
           getTotalsPanel(
             THEME,
@@ -660,6 +715,15 @@ class MapViewState extends State<MapView> {
                     // Street View
                     getFreeView(
                       context,
+                    ),
+                    const SizedBox(
+                      height: 10,
+                    ),
+                    // Clear Button
+                    getClearButton(
+                      THEME,
+                      clearAll,
+                      _reload,
                     )
                   ],
                 );

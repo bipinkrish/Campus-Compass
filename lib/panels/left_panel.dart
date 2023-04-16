@@ -125,3 +125,21 @@ FloatingActionButton getMenuButton(THEME, BuildContext context) {
     ),
   );
 }
+
+// -----------------------------------------------------------------------------------------------
+
+Visibility getClearButton(THEME, clearAll, _reload) {
+  return Visibility(
+    visible: _reload,
+    child: FloatingActionButton(
+      onPressed: () {
+        clearAll(true);
+      },
+      backgroundColor: THEME[0],
+      foregroundColor: THEME[1],
+      child: const Icon(
+        Icons.replay_rounded,
+      ),
+    ),
+  );
+}
