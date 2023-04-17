@@ -2,76 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart' show SvgPicture;
+import 'package:campusmap/views/search_page.dart' show SearchPage;
 
 // -----------------------------------------------------------------------------------------------
-
-Widget _textField(
-    {required TextEditingController controller,
-    required FocusNode focusNode,
-    required String label,
-    required String hint,
-    required double width,
-    required Icon prefixIcon,
-    required Function(String) locationCallback,
-    required THEME,
-    required isButtonEnabled}) {
-  return SizedBox(
-    width: width * 0.7,
-    child: TextField(
-      onChanged: (value) {
-        locationCallback(value);
-      },
-      style: TextStyle(
-        color: THEME[1],
-      ),
-      controller: controller,
-      focusNode: focusNode,
-      decoration: InputDecoration(
-        prefixIcon: prefixIcon,
-        labelText: label,
-        floatingLabelBehavior: FloatingLabelBehavior.never,
-        labelStyle: TextStyle(
-          color: THEME[3],
-        ),
-        filled: true,
-        fillColor: THEME[0],
-        enabledBorder: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(
-            Radius.circular(10),
-          ),
-          borderSide: BorderSide(
-            color: THEME[0],
-            width: 2,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: const BorderRadius.all(
-            Radius.circular(10),
-          ),
-          borderSide: BorderSide(
-            color: THEME[1],
-            width: 2,
-          ),
-        ),
-        contentPadding: const EdgeInsets.all(2),
-        hintText: hint,
-        hintStyle: TextStyle(color: THEME[3]),
-        suffixIcon: isButtonEnabled
-            ? GestureDetector(
-                onTap: () {
-                  controller.clear();
-                },
-                child: Icon(
-                  Icons.clear,
-                  color: THEME[3],
-                ),
-              )
-            : null,
-      ),
-      cursorColor: THEME[3],
-    ),
-  );
-}
 
 FloatingActionButton getGoButton(THEME, isButtonEnabled, goButtonPressed) {
   return FloatingActionButton(
@@ -92,7 +25,7 @@ FloatingActionButton getGoButton(THEME, isButtonEnabled, goButtonPressed) {
 
 Container getBottomPanel(
     THEME,
-    _translations,
+    translations,
     destinationAddressController,
     destinationAddressFocusNode,
     width,
@@ -103,26 +36,62 @@ Container getBottomPanel(
   return Container(
     alignment: Alignment.bottomCenter,
     child: Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.fromLTRB(5, 0, 5, 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           // Destination Field
-          _textField(
-            label: _translations!["destination"] ?? "Destination",
-            hint: _translations!["cd"] ?? "Choose destination",
-            prefixIcon: Icon(
-              Icons.place_rounded,
-              color: THEME[1],
-            ),
-            controller: destinationAddressController,
-            focusNode: destinationAddressFocusNode,
-            width: width,
-            locationCallback: (String value) {
-              setDestinationAddress(value);
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SearchPage(
+                    controller: destinationAddressController,
+                    focusNode: destinationAddressFocusNode,
+                    locationCallback: (String value, double lat, double lng) {
+                      setDestinationAddress(value, lat, lng);
+                    },
+                    THEME: THEME,
+                    translations: translations,
+                  ),
+                ),
+              );
             },
-            THEME: THEME,
-            isButtonEnabled: isButtonEnabled,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                width: width * 0.7,
+                height: destinationAddressController.text.isEmpty ||
+                        destinationAddressController.text.length <= 40
+                    ? 50
+                    : 60,
+                color: THEME[0],
+                child: ListTile(
+                  dense: true,
+                  // leading: Icon(
+                  //   Icons.place_rounded,
+                  //   color: THEME[1],
+                  // ),
+                  title: destinationAddressController.text.isEmpty
+                      ? Text(
+                          translations!["destination"] ?? "Destination",
+                          style: TextStyle(
+                            color: THEME[3],
+                            fontSize: 16,
+                          ),
+                        )
+                      : Text(
+                          destinationAddressController.text,
+                          style: TextStyle(
+                            color: THEME[1],
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ),
+            ),
           ),
           // Go button
           getGoButton(
@@ -138,7 +107,7 @@ Container getBottomPanel(
 
 // -----------------------------------------------------------------------------------------------
 
-Align getTotalsPanel(THEME, _placeDuration, _placeDistance, _translations,
+Align getTotalsPanel(THEME, _placeDuration, _placeDistance, translations,
     destinationAddressFocus) {
   return Align(
     alignment: const Alignment(0, 0.8),
@@ -156,7 +125,7 @@ Align getTotalsPanel(THEME, _placeDuration, _placeDistance, _translations,
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
                   _placeDuration != null
-                      ? "${_placeDuration!} ${_translations != null && _translations!["sec"] != null ? _translations!["sec"]! : "sec"}"
+                      ? "${_placeDuration!} ${translations != null && translations!["sec"] != null ? translations!["sec"]! : "sec"}"
                       : "",
                   style: TextStyle(
                       fontSize: 14,
@@ -179,7 +148,7 @@ Align getTotalsPanel(THEME, _placeDuration, _placeDistance, _translations,
                 padding: const EdgeInsets.all(8.0),
                 child: Text(
                   _placeDistance != null
-                      ? "${_placeDistance!} ${_translations != null && _translations!["km"] != null ? _translations!["km"]! : "km"}"
+                      ? "${_placeDistance!} ${translations != null && translations!["km"] != null ? translations!["km"]! : "km"}"
                       : "",
                   style: TextStyle(
                       fontSize: 14,

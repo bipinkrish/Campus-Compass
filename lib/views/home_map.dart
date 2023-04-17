@@ -5,7 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart' show FlutterTts;
 import 'package:flutter_polyline_points/flutter_polyline_points.dart'
     show PolylinePoints, PointLatLng;
 import 'package:geocoding/geocoding.dart'
-    show Placemark, placemarkFromCoordinates, Location, locationFromAddress;
+    show Placemark, placemarkFromCoordinates, Location;
 import 'package:geolocator/geolocator.dart' show Position, Geolocator;
 import 'package:google_maps_flutter/google_maps_flutter.dart'
     show
@@ -62,7 +62,7 @@ class MapViewState extends State<MapView> {
   final destinationAddressFocusNode = FocusNode();
 
   // String _startAddress = '';
-  String _destinationAddress = '';
+  // String _destinationAddress = '';
   String? _placeDistance;
   String? _nxtDistance;
   String? _nxtDuration;
@@ -109,12 +109,15 @@ class MapViewState extends State<MapView> {
 
   late String _language;
   String mode = 'walking';
-  Map<String, String>? _translations;
+  Map<String, String>? translations;
   late Position _lastPosition;
   double updateDist = 5;
   bool isButtonEnabled = false;
   String snackText = "";
   bool _reload = false;
+
+  late double _destinationLatitude;
+  late double _destinationLongitude;
 
   Set<Polygon> collegeBoundary = {
     Polygon(
@@ -146,7 +149,7 @@ class MapViewState extends State<MapView> {
       });
       await _getAddress();
     }).catchError((e) {
-      print(e);
+      debugPrint(e.toString());
     });
   }
 
@@ -165,7 +168,7 @@ class MapViewState extends State<MapView> {
         // _startAddress = _currentAddress;
       });
     } catch (e) {
-      print(e);
+      debugPrint(e.toString());
     }
   }
 
@@ -173,15 +176,17 @@ class MapViewState extends State<MapView> {
     try {
       // Retrieving placemarks from addresses
       // List<Location>? startPlacemark = await locationFromAddress(_startAddress);
-      List<Location>? destinationPlacemark =
-          await locationFromAddress(_destinationAddress);
+      // List<Location>? destinationPlacemark =
+      //     await locationFromAddress(_destinationAddress);
 
       // Use the retrieved coordinates of the current position, instead of the address if the start position is user's current position, as it results in better accuracy.
       double startLatitude = _currentPosition.latitude;
       double startLongitude = _currentPosition.longitude;
 
-      double destinationLatitude = destinationPlacemark[0].latitude;
-      double destinationLongitude = destinationPlacemark[0].longitude;
+      double destinationLatitude =
+          _destinationLatitude; // destinationPlacemark[0].latitude;
+      double destinationLongitude =
+          _destinationLongitude; // destinationPlacemark[0].longitude;
 
       // String startCoordinatesString = '($startLatitude, $startLongitude)';
       String destinationCoordinatesString =
@@ -193,7 +198,6 @@ class MapViewState extends State<MapView> {
         position: LatLng(destinationLatitude, destinationLongitude),
         infoWindow: InfoWindow(
           title: 'Destination $destinationCoordinatesString',
-          snippet: _destinationAddress,
         ),
         icon: BitmapDescriptor.defaultMarker,
       );
@@ -272,7 +276,7 @@ class MapViewState extends State<MapView> {
 
       return true;
     } catch (e) {
-      print(e);
+      debugPrint(e.toString());
     }
     return false;
   }
@@ -434,10 +438,10 @@ class MapViewState extends State<MapView> {
   }
 
   void _loadTranslationsAndLang() async {
-    Map<String, String>? translations = await getLanguage();
+    Map<String, String>? transl = await getLanguage();
     String? lang = await getLanguageCode();
     setState(() {
-      _translations = translations;
+      translations = transl;
       _language = lang;
     });
   }
@@ -463,9 +467,11 @@ class MapViewState extends State<MapView> {
     });
   }
 
-  void setDestinationAddress(String value) {
+  void setDestinationAddress(String value, double lat, double lng) {
     setState(() {
-      _destinationAddress = value;
+      destinationAddressController.text = value;
+      _destinationLatitude = lat;
+      _destinationLongitude = lng;
     });
   }
 
@@ -499,10 +505,9 @@ class MapViewState extends State<MapView> {
     await _tts.stop();
     if (all) {
       setState(() {
-        destinationAddressController.text = "";
+        setDestinationAddress("", 0, 0);
         _reload = false;
       });
-      setDestinationAddress(destinationAddressController.text);
     }
   }
 
@@ -514,13 +519,13 @@ class MapViewState extends State<MapView> {
     }
     _getDirections().then((isDone) {
       if (isDone) {
-        snackText = _translations!["dcs"] ?? "Distance Calculated Successfully";
+        snackText = translations!["dcs"] ?? "Distance Calculated Successfully";
         setState(() async {
           _reload = true;
           await _speakDirections();
         });
       } else {
-        snackText = _translations!["ecd"] ?? "Error Calculating Distance";
+        snackText = translations!["ecd"] ?? "Error Calculating Distance";
         setState(() {
           isButtonEnabled = true; // Enable the button
         });
@@ -605,10 +610,13 @@ class MapViewState extends State<MapView> {
                       tappedLatLng.latitude, tappedLatLng.longitude);
                   if (p.isNotEmpty) {
                     setState(() {
-                      destinationAddressController.text =
-                          "${p[0].name}, ${p[0].locality}, ${p[0].postalCode}, ${p[0].country}";
+                      setDestinationAddress(
+                        "${p[0].name}, ${p[0].locality}, ${p[0].postalCode}, ${p[0].country}",
+                        tappedLatLng.latitude,
+                        tappedLatLng.longitude,
+                      );
                     });
-                    setDestinationAddress(destinationAddressController.text);
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Center(
@@ -633,13 +641,13 @@ class MapViewState extends State<MapView> {
             THEME,
             _placeDuration,
             _placeDistance,
-            _translations,
+            translations,
             destinationAddressFocusNode.hasFocus,
           ),
           // Bottom Panel
           getBottomPanel(
               THEME,
-              _translations,
+              translations,
               destinationAddressController,
               destinationAddressFocusNode,
               width,
@@ -654,7 +662,7 @@ class MapViewState extends State<MapView> {
             _curManeuver,
             _nxtDuration,
             _nxtDistance,
-            _translations,
+            translations,
           ),
           // Right Panel
           Positioned(
@@ -731,7 +739,7 @@ class MapViewState extends State<MapView> {
       // Drawer
       drawer: getDrawer(
         THEME,
-        _translations,
+        translations,
         context,
         _loadTranslationsAndLang,
       ),
