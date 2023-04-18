@@ -31,6 +31,7 @@ const Map<String, Map<String, String>> TRANSLATIONS = {
     "nrf": 'No Results Found',
     "du" : "Destination Updated",
     "cancel" : "Cancel",
+    "search" : "Search",
   },
   "kn": {
     "app_title": "ಕ್ಯಾಂಪಸ್ ಕಂಪಾಸ್",
@@ -47,6 +48,7 @@ const Map<String, Map<String, String>> TRANSLATIONS = {
     "nrf": "ಯಾವುದೇ ಫಲಿತಾಂಶಗಳು ಸಿಗಲಿಲ್ಲ",
     "du" : "ಗಮನಿಸಬೇಕಾದ ಸ್ಥಳ ನವೀಕರಣಗೊಂಡಿದೆ",
     "cancel" : "ರದ್ದುಮಾಡಿ",
+    "search" : "ಹುಡುಕು",
   },
   "hi": {
     "app_title": "कैंपस कंपास",
@@ -63,6 +65,7 @@ const Map<String, Map<String, String>> TRANSLATIONS = {
     "nrf" : "कोई परिणाम नहीं मिला",
     'du' : "गंतव्य अपडेट हो गया है",
     "cancel" : "रद्द करें",
+    "search" : "खोज",
   },
 };
 

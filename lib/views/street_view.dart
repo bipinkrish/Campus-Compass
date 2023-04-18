@@ -1,11 +1,15 @@
 // ignore_for_file: constant_identifier_names, must_be_immutable, non_constant_identifier_names
 
-import 'package:campusmap/main.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_google_street_view/flutter_google_street_view.dart'
     show FlutterGoogleStreetView, StreetViewSource, StreetViewController;
-
+import 'package:flutter/cupertino.dart'
+    show
+        showCupertinoModalPopup,
+        CupertinoTheme,
+        CupertinoThemeData,
+        CupertinoActionSheet,
+        CupertinoActionSheetAction;
 import 'package:campusmap/presets/values.dart' show INFO;
 
 FloatingActionButton getFreeView(
@@ -142,7 +146,8 @@ class _FreeViewState extends State<FreeView> {
                                     decoration: InputDecoration(
                                       hintStyle:
                                           TextStyle(color: widget.THEME[3]),
-                                      hintText: "Search",
+                                      hintText: widget.translations["seacrh"] ??
+                                          "Search",
                                       prefixIconColor: widget.THEME[1],
                                       prefixIcon:
                                           const Icon(Icons.search_rounded),
