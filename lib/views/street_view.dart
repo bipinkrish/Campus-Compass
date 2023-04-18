@@ -1,20 +1,24 @@
-// ignore_for_file: constant_identifier_names, must_be_immutable
+// ignore_for_file: constant_identifier_names, must_be_immutable, non_constant_identifier_names
 
+import 'package:campusmap/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_google_street_view/flutter_google_street_view.dart'
     show FlutterGoogleStreetView, StreetViewSource, StreetViewController;
 
-import 'package:campusmap/main.dart' show THEME;
-import 'package:campusmap/presets/values.dart'
-    show mapAnchors, mapAngles, mapNames;
+import 'package:campusmap/presets/values.dart' show INFO;
 
-FloatingActionButton getFreeView(Map translations,BuildContext context) {
+FloatingActionButton getFreeView(
+    List<Color> THEME, translations, BuildContext context) {
   return FloatingActionButton(
     onPressed: () {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => FreeView(translations: translations,)),
+        MaterialPageRoute(
+            builder: (context) => FreeView(
+                  THEME: THEME,
+                  translations: translations,
+                )),
       );
     },
     backgroundColor: THEME[0],
@@ -26,8 +30,9 @@ FloatingActionButton getFreeView(Map translations,BuildContext context) {
 }
 
 class FreeView extends StatefulWidget {
+  List<Color> THEME;
   Map translations;
-  FreeView({ required this.translations,super.key});
+  FreeView({required this.THEME, required this.translations, super.key});
 
   @override
   State<FreeView> createState() => _FreeViewState();
@@ -36,9 +41,18 @@ class FreeView extends StatefulWidget {
 class _FreeViewState extends State<FreeView> {
   int panID = 1;
   late StreetViewController streetMapController;
-  String _mapName = mapNames[1];
-  String _mapAnchor = mapAnchors[1];
-  double _mapAngle = mapAngles[1];
+  String _mapName = INFO[1]["name"];
+  String _mapAnchor = INFO[1]["pid"];
+  double _mapAngle = INFO[1]["angle"].toDouble();
+
+  void updateValues(List<Map<String, dynamic>> filteredInfo, int i) {
+    setState(() {
+      panID = INFO.indexOf(filteredInfo[i]);
+      _mapAnchor = INFO[panID]["pid"];
+      _mapName = INFO[panID]["name"];
+      _mapAngle = INFO[panID]["angle"].toDouble();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,35 +76,40 @@ class _FreeViewState extends State<FreeView> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              backgroundColor: THEME[0],
-              foregroundColor: THEME[1],
+              backgroundColor: widget.THEME[0],
+              foregroundColor: widget.THEME[1],
               child: const Icon(Icons.arrow_back_rounded),
             ),
           ),
           // name panel
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 55),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: ColoredBox(
-                    color: THEME[0],
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Text(
-                        _mapName,
-                        style: TextStyle(
-                            color: THEME[1],
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(
+                      top: 55, bottom: 20, left: 10, right: 10),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: ColoredBox(
+                      color: widget.THEME[0],
+                      child: Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: Text(
+                          _mapName,
+                          style: TextStyle(
+                            color: widget.THEME[1],
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           // destination button
           Positioned(
@@ -101,49 +120,134 @@ class _FreeViewState extends State<FreeView> {
                 showCupertinoModalPopup(
                   context: context,
                   builder: (BuildContext context) {
-                    return CupertinoTheme(
-                      data: const CupertinoThemeData(),
-                      child: CupertinoActionSheet(
-                        actions: List<Widget>.generate(
-                          mapNames.length,
-                          (int i) => CupertinoActionSheetAction(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              setState(() {
-                                panID = i;
-                                _mapAnchor = mapAnchors[panID];
-                                _mapName = mapNames[panID];
-                                _mapAngle = mapAngles[panID];
-                              });
-                            },
-                            child: Text(
-                              mapNames[i],
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontStyle: FontStyle.italic,
-                                color: THEME[1],
+                    List<Map<String, dynamic>> filteredInfo = List.from(INFO);
+                    return StatefulBuilder(
+                      builder: (BuildContext context, StateSetter setState) {
+                        return CupertinoTheme(
+                          data: const CupertinoThemeData(),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // search bar
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    top: 120, left: 10, right: 10, bottom: 10),
+                                child: Material(
+                                  type: MaterialType.transparency,
+                                  child: TextField(
+                                    style: TextStyle(
+                                      color: widget.THEME[1],
+                                    ),
+                                    cursorColor: widget.THEME[3],
+                                    decoration: InputDecoration(
+                                      hintStyle:
+                                          TextStyle(color: widget.THEME[3]),
+                                      hintText: "Search",
+                                      prefixIconColor: widget.THEME[1],
+                                      prefixIcon:
+                                          const Icon(Icons.search_rounded),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: const BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: widget.THEME[0],
+                                          width: 2,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: const BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: widget.THEME[1],
+                                          width: 2,
+                                        ),
+                                      ),
+                                      fillColor: widget.THEME[2],
+                                      filled: true,
+                                    ),
+                                    onChanged: (String value) {
+                                      setState(() {
+                                        filteredInfo = INFO
+                                            .where((info) => info["name"]
+                                                .toLowerCase()
+                                                .contains(value.toLowerCase()))
+                                            .toList();
+                                      });
+                                    },
+                                  ),
+                                ),
                               ),
-                            ),
+                              // list
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  child: CupertinoActionSheet(
+                                    actions: filteredInfo.isEmpty
+                                        ? [
+                                            Material(
+                                              type: MaterialType.transparency,
+                                              child: Center(
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.all(8.0),
+                                                  child: Text(
+                                                    widget.translations[
+                                                            "nrf"] ??
+                                                        "No Results Found",
+                                                    style: TextStyle(
+                                                        color: widget.THEME[1]),
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          ]
+                                        : List<Widget>.generate(
+                                            filteredInfo.length,
+                                            (int i) =>
+                                                CupertinoActionSheetAction(
+                                              onPressed: () {
+                                                Navigator.pop(context);
+                                                setState(
+                                                  () => updateValues(
+                                                      filteredInfo, i),
+                                                );
+                                              },
+                                              child: Text(
+                                                filteredInfo[i]["name"],
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontStyle: FontStyle.italic,
+                                                  color: widget.THEME[1],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                    cancelButton: CupertinoActionSheetAction(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: Text(
+                                        widget.translations["cancel"] ??
+                                            "Cancel",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: widget.THEME[1],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        cancelButton: CupertinoActionSheetAction(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(
-                            widget.translations["cancel"] ?? "Cancel",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: THEME[1],
-                            ),
-                          ),
-                        ),
-                      ),
+                        );
+                      },
                     );
                   },
                 );
               },
-              foregroundColor: THEME[1],
-              backgroundColor: THEME[2],
+              foregroundColor: widget.THEME[1],
+              backgroundColor: widget.THEME[2],
               child: const Icon(
                 Icons.map_rounded,
               ),

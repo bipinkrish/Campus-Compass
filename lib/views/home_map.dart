@@ -24,7 +24,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'
 
 import 'package:campusmap/main.dart' show THEME;
 import 'package:campusmap/presets/language_texts.dart'
-    show getLanguage, getLanguageCode;
+    show getLanguage, getLanguageCode, TRANSLATIONS;
 import 'package:campusmap/presets/map_styles.dart' show MapStyle;
 import 'package:campusmap/views/street_view.dart' show getFreeView;
 import 'package:campusmap/panels/left_panel.dart'
@@ -104,9 +104,9 @@ class MapViewState extends State<MapView> {
   List<dynamic> _stepdurations = [];
   List<dynamic> _stepdistances = [];
 
-  late String _language;
+  String _language = "en";
   String mode = 'walking';
-  Map<String, String>? translations;
+  Map<String, String> translations = TRANSLATIONS["en"]!;
   late Position _lastPosition;
   double updateDist = 5;
   bool isButtonEnabled = false;
@@ -355,7 +355,7 @@ class MapViewState extends State<MapView> {
   }
 
   void _loadTranslationsAndLang() async {
-    Map<String, String>? transl = await getLanguage();
+    Map<String, String> transl = await getLanguage();
     String? lang = await getLanguageCode();
     setState(() {
       translations = transl;
@@ -436,13 +436,13 @@ class MapViewState extends State<MapView> {
     }
     _getDirections().then((isDone) {
       if (isDone) {
-        snackText = translations!["dfs"] ?? "Direction Found Successfully";  // Distance Calculated Sucessfully
+        snackText = translations["dfs"] ?? "Direction Found Successfully";  // Distance Calculated Sucessfully
         setState(() async {
           _reload = true;
           await _speakDirections();
         });
       } else {
-        snackText = translations!["efd"] ?? "Error Finding Direction";
+        snackText = translations["efd"] ?? "Error Finding Direction";
         setState(() {
           isButtonEnabled = true; // Enable the button
         });
@@ -537,7 +537,7 @@ class MapViewState extends State<MapView> {
                     SnackBar(
                       content: Center(
                         child: Text(
-                          translations!["du"] ?? 'Destination Updated',
+                          translations["du"] ?? 'Destination Updated',
                           style: TextStyle(color: THEME[1]),
                         ),
                       ),
@@ -634,7 +634,8 @@ class MapViewState extends State<MapView> {
                     ),
                     // Street View
                     getFreeView(
-                      translations!,
+                      THEME,
+                      translations,
                       context,
                     ),
                     const SizedBox(

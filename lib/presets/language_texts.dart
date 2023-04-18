@@ -71,9 +71,9 @@ void setLanguage(String lang) async {
   await prefs.setString('lang', lang);
 }
 
-Future<Map<String, String>?> getLanguage() async {
+Future<Map<String, String>> getLanguage() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  return TRANSLATIONS[prefs.getString("lang") ?? "en"];
+  return TRANSLATIONS[prefs.getString("lang") ?? "en"] ?? TRANSLATIONS["en"]!;
 }
 
 Future<String> getLanguageCode() async {
