@@ -252,7 +252,7 @@ class _FreeViewState extends State<FreeView> {
                 );
               },
               foregroundColor: widget.THEME[1],
-              backgroundColor: widget.THEME[2],
+              backgroundColor: widget.THEME[0],
               child: const Icon(
                 Icons.map_rounded,
               ),
