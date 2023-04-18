@@ -50,7 +50,7 @@ FloatingActionButton getMapTypeButton(
     child: const SizedBox(
       width: 56,
       height: 56,
-      child: Icon(Icons.camera_rounded),
+      child: Icon(Icons.layers_rounded),
     ),
     onPressed: () {
       showModalBottomSheet<void>(

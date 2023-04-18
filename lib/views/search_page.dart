@@ -167,7 +167,7 @@ class _SearchPageState extends State<SearchPage> {
                 ? Padding(
                     padding: const EdgeInsets.all(15),
                     child: Text(
-                      "No Results Found",
+                      widget.translations["nrf"] ?? "No Results Found",
                       style: TextStyle(
                         color: widget.THEME[1],
                       ),

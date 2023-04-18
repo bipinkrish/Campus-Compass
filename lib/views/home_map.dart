@@ -2,10 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart' show FlutterTts;
-import 'package:flutter_polyline_points/flutter_polyline_points.dart'
-    show PolylinePoints, PointLatLng;
-import 'package:geocoding/geocoding.dart'
-    show Placemark, placemarkFromCoordinates, Location;
 import 'package:geolocator/geolocator.dart' show Position, Geolocator;
 import 'package:google_maps_flutter/google_maps_flutter.dart'
     show
@@ -39,8 +35,10 @@ import 'package:campusmap/panels/middle_panel.dart' show getMiddlePanel;
 import 'package:campusmap/panels/bottom_panel.dart'
     show getBottomPanel, getTotalsPanel;
 import 'package:campusmap/presets/values.dart'
-    show sitLat, sitLng, collegeBoundaryD;
+    show sitLat, sitLng, collegeBoundaryD, Destinations;
 import 'package:campusmap/requests.dart' show getDirections;
+import 'package:campusmap/computations.dart'
+    show decodePolylineFromJson, isPointInPolygon, findNearestPlaceName;
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -52,8 +50,8 @@ class MapView extends StatefulWidget {
 class MapViewState extends State<MapView> {
   late GoogleMapController mapController;
   late Position _currentPosition;
+  bool curPosIsInit = false;
   // late double _startLat, _startLng, _destLat, _desLng;
-  String _currentAddress = '';
 
   final startAddressController = TextEditingController();
   final destinationAddressController = TextEditingController();
@@ -91,7 +89,6 @@ class MapViewState extends State<MapView> {
   List<IconData> mapStyleIcons = [];
   int _choseMapStyle = 4;
 
-  late PolylinePoints polylinePoints;
   Set<Polyline> polylines = <Polyline>{};
   List<LatLng> polylineCoordinates = [];
 
@@ -133,60 +130,30 @@ class MapViewState extends State<MapView> {
   // Method for retrieving the current location
   Future<void> _getCurrentLocation() async {
     // able to reduce battery if forceAndroidLocationManager is used
-    await Geolocator.getCurrentPosition().then((Position position) async {
-      setState(() {
-        _currentPosition = position;
-        mapController.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(position.latitude, position.longitude),
-              zoom: 20,
-              tilt: _tilt,
-              bearing: _bearing,
-            ),
+    _currentPosition = await Geolocator.getCurrentPosition();
+    setState(() {
+      curPosIsInit = true;
+      mapController.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target:
+                LatLng(_currentPosition.latitude, _currentPosition.longitude),
+            zoom: 20,
+            tilt: _tilt,
+            bearing: _bearing,
           ),
-        );
-      });
-      await _getAddress();
-    }).catchError((e) {
-      debugPrint(e.toString());
+        ),
+      );
     });
-  }
-
-  // Method for retrieving the address
-  Future<void> _getAddress() async {
-    try {
-      List<Placemark> p = await placemarkFromCoordinates(
-          _currentPosition.latitude, _currentPosition.longitude);
-
-      Placemark place = p[0];
-
-      setState(() {
-        _currentAddress =
-            "${place.name}, ${place.locality}, ${place.postalCode}, ${place.country}";
-        startAddressController.text = _currentAddress;
-        // _startAddress = _currentAddress;
-      });
-    } catch (e) {
-      debugPrint(e.toString());
-    }
   }
 
   Future<bool> _getDirections() async {
     try {
-      // Retrieving placemarks from addresses
-      // List<Location>? startPlacemark = await locationFromAddress(_startAddress);
-      // List<Location>? destinationPlacemark =
-      //     await locationFromAddress(_destinationAddress);
-
-      // Use the retrieved coordinates of the current position, instead of the address if the start position is user's current position, as it results in better accuracy.
       double startLatitude = _currentPosition.latitude;
       double startLongitude = _currentPosition.longitude;
 
-      double destinationLatitude =
-          _destinationLatitude; // destinationPlacemark[0].latitude;
-      double destinationLongitude =
-          _destinationLongitude; // destinationPlacemark[0].longitude;
+      double destinationLatitude = _destinationLatitude;
+      double destinationLongitude = _destinationLongitude;
 
       // String startCoordinatesString = '($startLatitude, $startLongitude)';
       String destinationCoordinatesString =
@@ -281,52 +248,6 @@ class MapViewState extends State<MapView> {
     return false;
   }
 
-  // Decode lat lang from string
-  List<PointLatLng> decodePolyline(String encoded) {
-    List<PointLatLng> points = <PointLatLng>[];
-    int index = 0, lat = 0, lng = 0;
-
-    while (index < encoded.length) {
-      int b, shift = 0, result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lat += dlat;
-
-      shift = 0;
-      result = 0;
-      do {
-        b = encoded.codeUnitAt(index++) - 63;
-        result |= (b & 0x1f) << shift;
-        shift += 5;
-      } while (b >= 0x20);
-      int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
-      lng += dlng;
-
-      points.add(PointLatLng(lat / 1E5, lng / 1E5));
-    }
-
-    return points;
-  }
-
-  // Decode polies from response
-  List<PointLatLng> decodePolylineFromJson(Map<dynamic, dynamic> json) {
-    List<PointLatLng> points = [];
-
-    List<dynamic> steps = json['routes'][0]['legs'][0]['steps'];
-
-    for (int i = 0; i < steps.length; i++) {
-      String encodedPolyline = steps[i]['polyline']['points'];
-      List<PointLatLng> decodedPoints = decodePolyline(encodedPolyline);
-      points.addAll(decodedPoints);
-    }
-
-    return points;
-  }
-
   // Create the polylines for showing the route between two places
   Future<void> _createPolylines(
       Map values,
@@ -334,11 +255,7 @@ class MapViewState extends State<MapView> {
       double startLongitude,
       double destinationLatitude,
       double destinationLongitude) async {
-    List<PointLatLng> result = decodePolylineFromJson(values);
-
-    List<LatLng> polylineCoordinates = result.map((point) {
-      return LatLng(point.latitude, point.longitude);
-    }).toList();
+    List<LatLng> polylineCoordinates = decodePolylineFromJson(values);
 
     PolylineId startingConnectingLineId =
         const PolylineId('startingConnectingLine');
@@ -514,18 +431,18 @@ class MapViewState extends State<MapView> {
   Future<void> goButtonPressed() async {
     clearAll(false);
 
-    if (startAddressController.text.isEmpty) {
+    if (!curPosIsInit) {
       await _getCurrentLocation();
     }
     _getDirections().then((isDone) {
       if (isDone) {
-        snackText = translations!["dcs"] ?? "Distance Calculated Successfully";
+        snackText = translations!["dfs"] ?? "Direction Found Successfully";  // Distance Calculated Sucessfully
         setState(() async {
           _reload = true;
           await _speakDirections();
         });
       } else {
-        snackText = translations!["ecd"] ?? "Error Calculating Distance";
+        snackText = translations!["efd"] ?? "Error Finding Direction";
         setState(() {
           isButtonEnabled = true; // Enable the button
         });
@@ -605,34 +522,32 @@ class MapViewState extends State<MapView> {
               },
               onTap: (tappedLatLng) async {
                 if (destinationAddressController.text.isEmpty &&
-                    !destinationAddressFocusNode.hasFocus) {
-                  List<Placemark> p = await placemarkFromCoordinates(
+                    isPointInPolygon(collegeBoundaryD, tappedLatLng.longitude,
+                        tappedLatLng.latitude)) {
+                  Map<String, dynamic> place = findNearestPlaceName(Destinations,
                       tappedLatLng.latitude, tappedLatLng.longitude);
-                  if (p.isNotEmpty) {
-                    setState(() {
-                      setDestinationAddress(
-                        "${p[0].name}, ${p[0].locality}, ${p[0].postalCode}, ${p[0].country}",
-                        tappedLatLng.latitude,
-                        tappedLatLng.longitude,
-                      );
-                    });
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Center(
-                          child: Text(
-                            'Destination Updated',
-                            style: TextStyle(color: THEME[1]),
-                          ),
-                        ),
-                        duration: const Duration(seconds: 1),
-                        behavior: SnackBarBehavior.floating,
-                        showCloseIcon: true,
-                        closeIconColor: THEME[1],
-                        backgroundColor: THEME[0],
-                      ),
+                  setState(() {
+                    setDestinationAddress(
+                      place["name"],
+                      place['coordinates'][1],
+                      place['coordinates'][0],
                     );
-                  }
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Center(
+                        child: Text(
+                          translations!["du"] ?? 'Destination Updated',
+                          style: TextStyle(color: THEME[1]),
+                        ),
+                      ),
+                      duration: const Duration(seconds: 1),
+                      behavior: SnackBarBehavior.floating,
+                      showCloseIcon: true,
+                      closeIconColor: THEME[1],
+                      backgroundColor: THEME[0],
+                    ),
+                  );
                 }
                 destinationAddressFocusNode.unfocus();
               }),
@@ -646,15 +561,16 @@ class MapViewState extends State<MapView> {
           ),
           // Bottom Panel
           getBottomPanel(
-              THEME,
-              translations,
-              destinationAddressController,
-              destinationAddressFocusNode,
-              width,
-              isButtonEnabled,
-              setDestinationAddress,
-              goButtonPressed,
-              context),
+            THEME,
+            translations,
+            destinationAddressController,
+            destinationAddressFocusNode,
+            width,
+            isButtonEnabled,
+            setDestinationAddress,
+            goButtonPressed,
+            context,
+          ),
           // Middle Panel
           getMiddlePanel(
             THEME,
@@ -718,6 +634,7 @@ class MapViewState extends State<MapView> {
                     ),
                     // Street View
                     getFreeView(
+                      translations!,
                       context,
                     ),
                     const SizedBox(

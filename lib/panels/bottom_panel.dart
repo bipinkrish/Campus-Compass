@@ -24,15 +24,16 @@ FloatingActionButton getGoButton(THEME, isButtonEnabled, goButtonPressed) {
 }
 
 Container getBottomPanel(
-    THEME,
-    translations,
-    destinationAddressController,
-    destinationAddressFocusNode,
-    width,
-    isButtonEnabled,
-    setDestinationAddress,
-    goButtonPressed,
-    BuildContext context) {
+  THEME,
+  translations,
+  destinationAddressController,
+  destinationAddressFocusNode,
+  width,
+  isButtonEnabled,
+  setDestinationAddress,
+  goButtonPressed,
+  BuildContext context,
+) {
   return Container(
     alignment: Alignment.bottomCenter,
     child: Padding(
@@ -88,6 +89,7 @@ Container getBottomPanel(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                 ),
               ),

@@ -1,4 +1,4 @@
-// ignore_for_file: constant_identifier_names
+// ignore_for_file: constant_identifier_names, must_be_immutable
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -9,12 +9,12 @@ import 'package:campusmap/main.dart' show THEME;
 import 'package:campusmap/presets/values.dart'
     show mapAnchors, mapAngles, mapNames;
 
-FloatingActionButton getFreeView(BuildContext context) {
+FloatingActionButton getFreeView(Map translations,BuildContext context) {
   return FloatingActionButton(
     onPressed: () {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const FreeView()),
+        MaterialPageRoute(builder: (context) => FreeView(translations: translations,)),
       );
     },
     backgroundColor: THEME[0],
@@ -26,7 +26,8 @@ FloatingActionButton getFreeView(BuildContext context) {
 }
 
 class FreeView extends StatefulWidget {
-  const FreeView({super.key});
+  Map translations;
+  FreeView({ required this.translations,super.key});
 
   @override
   State<FreeView> createState() => _FreeViewState();
@@ -128,7 +129,7 @@ class _FreeViewState extends State<FreeView> {
                         cancelButton: CupertinoActionSheetAction(
                           onPressed: () => Navigator.pop(context),
                           child: Text(
-                            "Cancel",
+                            widget.translations["cancel"] ?? "Cancel",
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
