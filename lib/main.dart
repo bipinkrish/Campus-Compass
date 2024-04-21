@@ -12,7 +12,7 @@ List<Color> THEME = const [
 ];
 
 // apikey
-const API_KEY = "AIzaSyCmyfqPois80RK7UTuXlL8s0RSGXxzA7g8";
+const API_KEY = "";
 
 void main() {
   runApp(const MyApp());
