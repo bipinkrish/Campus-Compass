@@ -13,7 +13,7 @@ clear and concise directions to users throughout their journey. The application 
 have the ability to update its route based on real-time traffic or other factors that may affect
 travel time.*
 
-#### [Read our Paper at Grenze](https://thegrenze.com/index.php?display=page&view=journalabstract&absid=2406&id=8) or [Download the Report](https://thegrenze.com/pages/servej.php?fn=511_1.pdf&name=Campus%20Compass:%20A%20Flutter-based%20Interactive%20Map%20forCampus%20Navigation&id=2406&association=GRENZE&journal=GIJET&year=2024&volume=10&issue=1)
+#### [Read our Paper at Grenze](https://thegrenze.com/index.php?display=page&view=journalabstract&absid=2406&id=8) or [Download the Report](https://thegrenze.com/pages/servej.php?fn=511_1.pdf&name=Campus%20Compass:%20A%20Flutter-based%20Interactive%20Map%20forCampus%20Navigation&id=2406&association=GRENZE&journal=GIJET&year=2024&volume=10&issue=1) | 01.GIJET.10.1.511_1
 
 ## API KEY
 
